@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cricket Analyst</title>
+<style>
+  :root {
+    --navy: #0a2540;
+    --green: #00875a;
+    --green-light: #e3f5ee;
+    --line: #e3e8ee;
+    --muted: #5a6b7b;
+    --bg: #f5f7fa;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--navy); line-height: 1.6;
+  }
+  .topbar {
+    background: var(--navy); color: #fff; padding: 18px 32px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .topbar .dot { width: 10px; height: 10px; border-radius: 50%; background: #ff4757; }
+  .topbar h1 { font-size: 18px; font-weight: 600; letter-spacing: 0.3px; }
+  .topbar .live { font-size: 12px; color: #9fb3c8; margin-left: auto; }
+  .wrap { max-width: 820px; margin: 32px auto; padding: 0 20px; }
+  .controls {
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px; display: flex; gap: 12px; align-items: center;
+    box-shadow: 0 1px 3px rgba(10,37,64,0.06);
+  }
+  select {
+    flex: 1; padding: 12px 14px; border: 1px solid var(--line);
+    border-radius: 8px; font-size: 14px; color: var(--navy); background: #fff;
+  }
+  button {
+    background: var(--green); color: #fff; border: none; padding: 12px 22px;
+    border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    padding: 24px; margin-top: 20px; box-shadow: 0 1px 3px rgba(10,37,64,0.06);
+  }
+  .match-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .match-meta { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  .score-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px; background: var(--green-light); border-radius: 8px;
+    margin-bottom: 10px;
+  }
+  .score-row .inn { font-weight: 600; }
+  .score-row .runs { font-size: 22px; font-weight: 800; color: var(--green); }
+  .score-row .rr { font-size: 12px; color: var(--muted); }
+  .section-label {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--muted); margin: 22px 0 10px;
+  }
+  .factor {
+    padding: 12px 16px; border-left: 3px solid var(--green);
+    background: #fafbfc; border-radius: 0 6px 6px 0; margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .analysis-text { font-size: 15px; color: #2c3e50; }
+  .badge {
+    display: inline-block; background: var(--green-light); color: var(--green);
+    font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+    margin-top: 16px;
+  }
+  .loader { text-align: center; padding: 40px; color: var(--muted); }
+  .spinner {
+    width: 32px; height: 32px; border: 3px solid var(--line);
+    border-top-color: var(--green); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="dot"></span>
+    <h1>Cricket Analyst</h1>
+    <span class="live">LIVE · AI POWERED</span>
+  </div>
+
+  <div class="wrap">
+    <div class="controls">
+      <select id="matchSelect"><option>Loading matches…</option></select>
+      <button id="analyzeBtn" onclick="analyze()">Analyze</button>
+    </div>
+
+    <div id="loader" class="loader hidden">
+      <div class="spinner"></div>
+      Running analysis through the agent…
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+<script>
+  // Load the dropdown with current matches on page load.
+  async function loadMatches() {
+    const sel = document.getElementById("matchSelect");
+    try {
+      const res = await fetch("/matches");
+      const data = await res.json();
+      sel.innerHTML = "";
+      const withScore = data.matches.filter(m => m.has_score);
+      const list = withScore.length ? withScore : data.matches;
+      if (!list.length) {
+        sel.innerHTML = "<option>No matches available</option>";
+        return;
+      }
+      list.forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = m.name;
+        sel.appendChild(opt);
+      });
+    } catch (e) {
+      sel.innerHTML = "<option>Failed to load matches</option>";
+    }
+  }
+
+  async function analyze() {
+    const btn = document.getElementById("analyzeBtn");
+    const loader = document.getElementById("loader");
+    const result = document.getElementById("result");
+    const matchId = document.getElementById("matchSelect").value;
+
+    btn.disabled = true;
+    result.innerHTML = "";
+    loader.classList.remove("hidden");
+
+    try {
+      const res = await fetch("/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ match_id: matchId }),
+      });
+      const data = await res.json();
+      renderResult(data);
+    } catch (e) {
+      result.innerHTML = `<div class="card">Something went wrong: ${e}</div>`;
+    } finally {
+      loader.classList.add("hidden");
+      btn.disabled = false;
+    }
+  }
+
+  function renderResult(data) {
+    const s = data.stats;
+    let scoreRows = s.innings.map(i => `
+      <div class="score-row">
+        <div>
+          <div class="inn">${i.inning}</div>
+          <div class="rr">${i.overs} overs · RR ${i.run_rate}</div>
+        </div>
+        <div class="runs">${i.runs}/${i.wickets}</div>
+      </div>`).join("");
+
+    let factors = data.turning_points.map(p =>
+      `<div class="factor">${p.replace(/^[\d.\-•*\s]+/, "")}</div>`
+    ).join("");
+
+    document.getElementById("result").innerHTML = `
+      <div class="card">
+        <div class="match-title">${s.name}</div>
+        <div class="match-meta">${s.venue} · ${s.status}</div>
+        ${scoreRows}
+        <div class="section-label">Key Factors</div>
+        ${factors}
+        <div class="section-label">Analysis</div>
+        <div class="analysis-text">${data.analysis}</div>
+        <span class="badge">${data.approved ? "✓ Approved" : "Best effort"} · ${data.revisions} revision(s)</span>
+      </div>`;
+  }
+
+  loadMatches();
+</script>
+</html>
