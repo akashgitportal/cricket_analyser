@@ -27,26 +27,19 @@
     background-attachment: fixed; color: var(--ink); line-height: 1.6;
     -webkit-font-smoothing: antialiased; min-height: 100vh;
   }
-  .topbar {
-    display: flex; align-items: center; gap: 14px; padding: 20px 40px;
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 20px 40px;
     border-bottom: 1px solid var(--line); background: rgba(255,255,255,0.7);
-    backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 50;
-  }
-  .crest {
-    width: 38px; height: 38px; border-radius: 11px;
+    backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 50; }
+  .crest { width: 38px; height: 38px; border-radius: 11px;
     background: linear-gradient(145deg, var(--green), var(--green-bright));
-    display: grid; place-items: center; color: #fff;
-    font-family: "Fraunces", serif; font-weight: 900; font-size: 20px;
-    box-shadow: var(--shadow-sm); cursor: pointer;
-  }
+    display: grid; place-items: center; color: #fff; font-family: "Fraunces", serif;
+    font-weight: 900; font-size: 20px; box-shadow: var(--shadow-sm); cursor: pointer; }
   .brand { cursor: pointer; }
-  .brand h1 { font-family: "Fraunces", serif; font-weight: 600; font-size: 21px;
-    letter-spacing: -0.01em; line-height: 1; }
-  .brand .sub { font-size: 11px; color: var(--ink-soft); letter-spacing: 0.16em;
-    text-transform: uppercase; font-weight: 500; margin-top: 3px; }
-  .topbar .pill { margin-left: auto; display: flex; align-items: center; gap: 7px;
-    font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--green); background: var(--green-wash); padding: 7px 14px; border-radius: 100px; }
+  .brand h1 { font-family: "Fraunces", serif; font-weight: 600; font-size: 21px; letter-spacing: -0.01em; line-height: 1; }
+  .brand .sub { font-size: 11px; color: var(--ink-soft); letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500; margin-top: 3px; }
+  .topbar .pill { margin-left: auto; display: flex; align-items: center; gap: 7px; font-size: 11px;
+    font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--green);
+    background: var(--green-wash); padding: 7px 14px; border-radius: 100px; }
   .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--red);
     box-shadow: 0 0 0 0 rgba(229,72,77,0.5); animation: pulse 2s infinite; }
   @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(229,72,77,0.5); }
@@ -54,81 +47,78 @@
 
   .wrap { max-width: 1080px; margin: 0 auto; padding: 34px 24px 80px; }
   .hero { margin-bottom: 24px; animation: rise 0.7s cubic-bezier(0.2,0.7,0.2,1) both; }
-  .hero .eyebrow { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
-    color: var(--gold); font-weight: 600; margin-bottom: 8px; }
-  .hero h2 { font-family: "Fraunces", serif; font-weight: 600; font-size: 34px;
-    line-height: 1.05; letter-spacing: -0.02em; max-width: 20ch; }
+  .hero .eyebrow { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); font-weight: 600; margin-bottom: 8px; }
+  .hero h2 { font-family: "Fraunces", serif; font-weight: 600; font-size: 34px; line-height: 1.05; letter-spacing: -0.02em; max-width: 20ch; }
   .hero h2 em { font-style: italic; color: var(--green); }
 
-  .tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--line-soft);
-    border-radius: 100px; margin-bottom: 18px; }
-  .tab { padding: 9px 22px; border-radius: 100px; border: none; background: transparent;
-    color: var(--ink-soft); font-family: "Outfit"; font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: all 0.25s; display: flex; align-items: center; }
+  .tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--line-soft); border-radius: 100px; margin-bottom: 18px; }
+  .tab { padding: 9px 22px; border-radius: 100px; border: none; background: transparent; color: var(--ink-soft);
+    font-family: "Outfit"; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.25s; display: flex; align-items: center; }
   .tab.active { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }
   .tab .livedot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); margin-right: 7px; }
   .tab.active .livedot { animation: pulse 2s infinite; }
 
-  /* ---- Live match cards ---- */
-  .live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 12px; margin-bottom: 8px; }
-  .mcard { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-    padding: 16px; cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow-sm);
-    position: relative; overflow: hidden; }
+  .live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin-bottom: 8px; }
+  .mcard { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; cursor: pointer;
+    transition: all 0.2s; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
   .mcard:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--green-bright); }
-  .mcard .live-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10px;
-    font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; }
+  .mcard .live-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; }
   .mcard .live-tag .pulse { width: 6px; height: 6px; }
-  .mcard .teams { font-family: "Fraunces", serif; font-weight: 600; font-size: 16px;
-    line-height: 1.2; margin-bottom: 4px; }
+  .mcard .teams { font-family: "Fraunces", serif; font-weight: 600; font-size: 16px; line-height: 1.2; margin-bottom: 4px; }
   .mcard .desc { font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; }
   .mcard-scores { margin: 8px 0 6px; }
-  .mcard .mscore { font-family: "Fraunces", serif; font-weight: 600; font-size: 15px;
-    color: var(--ink); line-height: 1.35; }
+  .mcard .mscore { font-family: "Fraunces", serif; font-weight: 600; font-size: 15px; color: var(--ink); line-height: 1.35; }
   .mcard .stat { font-size: 12px; color: var(--green); font-weight: 600; margin-top: 4px; }
-  .mcard .go-arrow { position: absolute; right: 14px; bottom: 14px; color: var(--ink-soft);
-    opacity: 0; transition: all 0.2s; font-size: 16px; }
+  .mcard .go-arrow { position: absolute; right: 14px; bottom: 14px; color: var(--ink-soft); opacity: 0; transition: all 0.2s; font-size: 16px; }
   .mcard:hover .go-arrow { opacity: 1; right: 12px; color: var(--green); }
   .empty-note { color: var(--ink-soft); font-size: 14px; padding: 20px 0; }
 
-  /* ---- Recent dropdown ---- */
-  .recent-pick { display: none; }
-  .recent-pick.show { display: block; }
+  .recent-pick { display: none; } .recent-pick.show { display: block; }
   .select-wrap { position: relative; max-width: 520px; }
-  .select-wrap::after { content: "▾"; position: absolute; right: 16px; top: 50%;
-    transform: translateY(-50%); color: var(--ink-soft); pointer-events: none; font-size: 12px; }
-  select { width: 100%; appearance: none; padding: 14px 40px 14px 16px;
-    border: 1px solid var(--line); border-radius: 12px; background: var(--card);
-    font-family: "Outfit"; font-size: 14px; color: var(--ink); cursor: pointer; box-shadow: var(--shadow-sm); }
+  .select-wrap::after { content: "▾"; position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+    color: var(--ink-soft); pointer-events: none; font-size: 12px; }
+  select { width: 100%; appearance: none; padding: 14px 40px 14px 16px; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--card); font-family: "Outfit"; font-size: 14px; color: var(--ink);
+    cursor: pointer; box-shadow: var(--shadow-sm); }
   select:focus { outline: none; border-color: var(--green-bright); box-shadow: 0 0 0 3px rgba(18,163,116,0.12); }
 
-  /* ---- Back button ---- */
-  .back-btn { display: inline-flex; align-items: center; gap: 7px; background: var(--card);
-    border: 1px solid var(--line); border-radius: 100px; padding: 9px 18px 9px 14px;
-    font-family: "Outfit"; font-size: 13px; font-weight: 600; color: var(--ink);
-    cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.2s; margin-bottom: 20px; }
+  .back-btn { display: inline-flex; align-items: center; gap: 7px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 100px; padding: 9px 18px 9px 14px; font-family: "Outfit"; font-size: 13px; font-weight: 600;
+    color: var(--ink); cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.2s; margin-bottom: 18px; }
   .back-btn:hover { transform: translateX(-2px); border-color: var(--green-bright); color: var(--green); }
   .back-btn .arr { font-size: 16px; line-height: 1; }
 
-  .detail-title { font-family: "Fraunces", serif; font-weight: 600; font-size: 30px;
-    letter-spacing: -0.02em; margin-bottom: 4px; }
-  .detail-meta { font-size: 13px; color: var(--ink-soft); margin-bottom: 4px; }
+  /* ---- Pinned score banner ---- */
+  .score-banner { background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+    box-shadow: var(--shadow-md); overflow: hidden; margin-bottom: 18px; animation: rise 0.5s cubic-bezier(0.2,0.7,0.2,1) both; }
+  .sb-accent { height: 5px; background: linear-gradient(90deg, var(--green), var(--green-bright), var(--gold)); }
+  .sb-inner { padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .sb-left .sb-title { font-family: "Fraunces", serif; font-size: 24px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.1; }
+  .sb-left .sb-status { font-size: 12.5px; color: var(--green); font-weight: 600; margin-top: 3px; }
+  .sb-scores { display: flex; gap: 22px; flex-wrap: wrap; }
+  .sb-score .sb-team { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  .sb-score .sb-runs { font-family: "Fraunces", serif; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.1; }
+  .sb-score .sb-runs b { color: var(--green); }
+  .sb-score .sb-ov { font-size: 11px; color: var(--ink-soft); }
 
-  /* ---- Two-column workspace ---- */
-  .workspace { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;
-    align-items: start; }
-  .col-card { background: var(--card); border: 1px solid var(--line); border-radius: 20px;
-    box-shadow: var(--shadow-lg); overflow: hidden; animation: rise 0.5s cubic-bezier(0.2,0.7,0.2,1) both; }
-  .col-accent { height: 5px; background: linear-gradient(90deg, var(--green), var(--green-bright), var(--gold)); }
-  .col-inner { padding: 22px 24px 26px; }
-  .col-head { font-family: "Fraunces", serif; font-size: 22px; font-weight: 600;
-    letter-spacing: -0.01em; margin-bottom: 4px; }
-  .col-sub { font-size: 12px; color: var(--ink-soft); margin-bottom: 16px; }
+  /* ---- Detail tabs ---- */
+  .dtabs { display: flex; gap: 4px; padding: 4px; background: var(--line-soft); border-radius: 100px;
+    margin-bottom: 20px; overflow-x: auto; }
+  .dtab { padding: 9px 20px; border-radius: 100px; border: none; background: transparent; color: var(--ink-soft);
+    font-family: "Outfit"; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.25s; white-space: nowrap; }
+  .dtab.active { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }
+  .dtab.analysis-tab.active { background: linear-gradient(145deg, var(--green), var(--green-bright)); color: #fff; }
 
-  /* ---- Compact scorecard ---- */
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow-lg);
+    overflow: hidden; animation: rise 0.4s cubic-bezier(0.2,0.7,0.2,1) both; }
+  .panel-accent { height: 5px; background: linear-gradient(90deg, var(--green), var(--green-bright), var(--gold)); }
+  .panel-inner { padding: 24px 26px 28px; }
+  .panel-head { font-family: "Fraunces", serif; font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+
+  /* scorecard */
   .sc-innings { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
-  .sc-header { padding: 11px 14px; cursor: pointer; display: flex; justify-content: space-between;
-    align-items: center; background: var(--green); color: #fff; }
+  .sc-header { padding: 11px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: var(--green); color: #fff; }
   .sc-header .sc-team { font-weight: 600; font-size: 14px; }
   .sc-header .sc-score { font-weight: 700; }
   .sc-header .chev { transition: transform 0.3s; margin-left: 10px; opacity: 0.85; }
@@ -136,85 +126,67 @@
   .sc-body { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.3,0.7,0.2,1); }
   .sc-innings.open .sc-body { max-height: 2000px; }
   table.sc { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  table.sc th { text-align: left; padding: 6px 14px; color: var(--ink-soft); font-size: 10px;
-    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
-    background: var(--line-soft); border-bottom: 1px solid var(--line); }
+  table.sc th { text-align: left; padding: 6px 14px; color: var(--ink-soft); font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.08em; font-weight: 600; background: var(--line-soft); border-bottom: 1px solid var(--line); }
   table.sc th.num, table.sc td.num { text-align: right; font-variant-numeric: tabular-nums; }
   table.sc td { padding: 5px 14px; border-bottom: 1px solid var(--line-soft); line-height: 1.3; }
   table.sc tr:last-child td { border-bottom: none; }
   table.sc td .bname { font-weight: 600; color: var(--green); }
   table.sc td .bout { color: var(--ink-soft); font-size: 11px; }
   table.sc td.num.r { font-weight: 700; color: var(--ink); }
-  .sc-subhead { padding: 9px 14px 3px; font-size: 10px; font-weight: 700; color: var(--gold);
-    text-transform: uppercase; letter-spacing: 0.1em; }
+  .sc-subhead { padding: 9px 14px 3px; font-size: 10px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.1em; }
   .sc-extras { padding: 6px 14px; font-size: 11px; color: var(--ink-soft); background: var(--paper); }
 
-  /* ---- Analyze panel ---- */
-  .analyze-panel { background: var(--card); border: 1px solid var(--line); border-radius: 20px;
-    box-shadow: var(--shadow-lg); padding: 24px; text-align: center; animation: rise 0.5s 0.06s cubic-bezier(0.2,0.7,0.2,1) both; }
-  .analyze-panel .ap-icon { width: 46px; height: 46px; margin: 0 auto 14px; border-radius: 13px;
-    background: linear-gradient(145deg, var(--green), var(--green-bright)); display: grid;
-    place-items: center; color: #fff; font-size: 22px; }
-  .analyze-panel .ap-title { font-family: "Fraunces", serif; font-size: 19px; font-weight: 600; margin-bottom: 6px; }
-  .analyze-panel .ap-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; }
-  button.go { width: 100%; background: linear-gradient(145deg, var(--green), var(--green-bright));
-    color: #fff; border: none; padding: 14px 28px; border-radius: 12px; font-family: "Outfit";
-    font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-sm);
-    transition: transform 0.15s, box-shadow 0.2s; }
+  /* analysis */
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: var(--gold);
+    margin: 24px 0 12px; display: flex; align-items: center; gap: 10px; }
+  .section-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .section-label:first-child { margin-top: 0; }
+  .factor { padding: 12px 16px 12px 38px; background: var(--green-wash); border-radius: 12px; margin-bottom: 8px;
+    font-size: 13.5px; position: relative; line-height: 1.5; }
+  .factor::before { content: ""; position: absolute; left: 15px; top: 17px; width: 8px; height: 8px; border-radius: 50%; background: var(--green-bright); }
+  .analysis-text { font-size: 15.5px; color: #25342d; line-height: 1.75; }
+  .analysis-text::first-letter { font-family: "Fraunces", serif; font-size: 48px; font-weight: 700; float: left; line-height: 0.8; padding: 6px 12px 0 0; color: var(--green); }
+  .badge { display: inline-flex; align-items: center; gap: 7px; margin-top: 18px; background: var(--ink); color: #fff;
+    font-size: 11px; font-weight: 600; padding: 7px 14px; border-radius: 100px; letter-spacing: 0.04em; }
+  .badge .tick { color: var(--green-bright); }
+  .analyze-cta { text-align: center; padding: 30px 10px; }
+  .analyze-cta .ap-icon { width: 46px; height: 46px; margin: 0 auto 14px; border-radius: 13px;
+    background: linear-gradient(145deg, var(--green), var(--green-bright)); display: grid; place-items: center; color: #fff; font-size: 22px; }
+  .analyze-cta .ap-title { font-family: "Fraunces", serif; font-size: 19px; font-weight: 600; margin-bottom: 6px; }
+  .analyze-cta .ap-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; max-width: 380px; margin-left: auto; margin-right: auto; }
+  button.go { background: linear-gradient(145deg, var(--green), var(--green-bright)); color: #fff; border: none;
+    padding: 13px 30px; border-radius: 12px; font-family: "Outfit"; font-size: 14px; font-weight: 600; cursor: pointer;
+    box-shadow: var(--shadow-sm); transition: transform 0.15s, box-shadow 0.2s; }
   button.go:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
-  button.go:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-  .orbit { width: 40px; height: 40px; margin: 0 auto 14px; position: relative; }
+  .orbit { width: 40px; height: 40px; margin: 30px auto 14px; position: relative; }
   .orbit::before, .orbit::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2.5px solid transparent; }
   .orbit::before { border-top-color: var(--green-bright); animation: spin 0.9s linear infinite; }
   .orbit::after { border-bottom-color: var(--gold); animation: spin 1.4s linear infinite reverse; inset: 7px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em;
-    color: var(--gold); margin: 22px 0 12px; display: flex; align-items: center; gap: 10px; }
-  .section-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-  .section-label:first-child { margin-top: 0; }
-  .factor { padding: 12px 16px 12px 38px; background: var(--green-wash); border-radius: 12px;
-    margin-bottom: 8px; font-size: 13.5px; position: relative; line-height: 1.5; }
-  .factor::before { content: ""; position: absolute; left: 15px; top: 17px; width: 8px; height: 8px;
-    border-radius: 50%; background: var(--green-bright); }
-  .analysis-text { font-size: 15px; color: #25342d; line-height: 1.72; }
-  .analysis-text::first-letter { font-family: "Fraunces", serif; font-size: 46px; font-weight: 700;
-    float: left; line-height: 0.8; padding: 6px 11px 0 0; color: var(--green); }
-  .badge { display: inline-flex; align-items: center; gap: 7px; margin-top: 18px;
-    background: var(--ink); color: #fff; font-size: 11px; font-weight: 600; padding: 7px 14px;
-    border-radius: 100px; letter-spacing: 0.04em; }
-  .badge .tick { color: var(--green-bright); }
-
-  .chart-card { background: var(--paper); border: 1px solid var(--line-soft); border-radius: 14px;
-    padding: 16px 18px; margin-bottom: 12px; }
+  /* charts */
+  .chart-card { background: var(--paper); border: 1px solid var(--line-soft); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
   .chart-title { font-family: "Fraunces", serif; font-size: 15px; font-weight: 600; margin-bottom: 3px; }
   .chart-sub { font-size: 11.5px; color: var(--ink-soft); margin-bottom: 14px; }
   .worm-svg { width: 100%; height: auto; display: block; }
   .worm-svg .grid { stroke: var(--line); stroke-width: 1; }
-  .worm-svg .line { fill: none; stroke: var(--green-bright); stroke-width: 2.5;
-    stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1400; stroke-dashoffset: 1400;
-    animation: draw 1.4s 0.2s cubic-bezier(0.3,0.7,0.2,1) forwards; }
+  .worm-svg .line { fill: none; stroke: var(--green-bright); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round;
+    stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: draw 1.4s 0.2s cubic-bezier(0.3,0.7,0.2,1) forwards; }
   .worm-svg .wk { fill: var(--red); }
   .worm-svg .wlabel { font-size: 9px; fill: var(--ink-soft); font-family: "Outfit"; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   .pbar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-  .pbar-label { font-size: 11.5px; width: 40%; color: var(--ink); text-align: right;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pbar-label { font-size: 11.5px; width: 40%; color: var(--ink); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pbar-track { flex: 1; height: 20px; background: var(--line-soft); border-radius: 6px; overflow: hidden; }
-  .pbar-fill { height: 100%; border-radius: 6px;
-    background: linear-gradient(90deg, var(--green), var(--green-bright)); width: 0;
+  .pbar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--green), var(--green-bright)); width: 0;
     transition: width 1s cubic-bezier(0.2,0.7,0.2,1); }
   .pbar-val { font-size: 11.5px; font-weight: 600; width: 30px; color: var(--green); }
 
   @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
   .hidden { display: none !important; }
-
-  @media (max-width: 860px) {
-    .workspace { grid-template-columns: 1fr; }
-    .topbar { padding: 16px 20px; }
-    .hero h2 { font-size: 27px; }
-  }
+  @media (max-width: 860px) { .topbar { padding: 16px 20px; } .hero h2 { font-size: 27px; } }
 </style>
 </head>
 <body>
@@ -225,42 +197,37 @@
   </header>
 
   <div class="wrap">
-    <!-- ============ LIST VIEW ============ -->
+    <!-- LIST VIEW -->
     <div id="listView">
       <div class="hero">
         <div class="eyebrow">Powered by an autonomous agent</div>
         <h2>Every innings, <em>read</em> like an analyst would.</h2>
       </div>
-
       <div class="tabs">
         <button class="tab active" id="tab-live" onclick="switchTab('live')"><span class="livedot"></span>Live</button>
         <button class="tab" id="tab-recent" onclick="switchTab('recent')">Recent</button>
       </div>
-
       <div id="liveGrid" class="live-grid"></div>
       <div id="recentPick" class="recent-pick">
-        <div class="select-wrap">
-          <select id="matchSelect"><option value="">Loading matches&hellip;</option></select>
-        </div>
+        <div class="select-wrap"><select id="matchSelect"><option value="">Loading matches&hellip;</option></select></div>
       </div>
     </div>
 
-    <!-- ============ DETAIL VIEW ============ -->
+    <!-- DETAIL VIEW -->
     <div id="detailView" class="hidden">
       <button class="back-btn" onclick="showList()"><span class="arr">&larr;</span> All matches</button>
-      <div id="detailHead"></div>
-      <div id="workspace"></div>
+      <div id="scoreBanner"></div>
+      <div class="dtabs" id="dtabs"></div>
+      <div id="tabContent"></div>
     </div>
   </div>
 
 <script>
-  let currentKind = "live";
-  let selectedId = "";
-  let selectedName = "";
-  let selectedStatus = "";
+  let currentKind = "live", selectedId = "", selectedName = "", selectedStatus = "";
   let lastScorecard = null;
+  let analysisData = null;        // cached once analyzed
+  let activeTab = "scorecard";
 
-  // ---- View switching ----
   function showList() {
     document.getElementById("detailView").classList.add("hidden");
     document.getElementById("listView").classList.remove("hidden");
@@ -269,11 +236,9 @@
   function showDetail() {
     document.getElementById("listView").classList.add("hidden");
     document.getElementById("detailView").classList.remove("hidden");
-    window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
-    // push a history entry so the browser/phone back button returns to the list
+    window.scrollTo({ top: 0 });
     history.pushState({ view: "detail" }, "");
   }
-  // browser/phone back button -> return to list
   window.addEventListener("popstate", () => {
     if (!document.getElementById("detailView").classList.contains("hidden")) showList();
   });
@@ -292,122 +257,141 @@
       const res = await fetch(`/matches?kind=${currentKind}`);
       const data = await res.json();
       const list = data.matches || [];
-      if (currentKind === "live") renderLiveCards(list);
-      else renderRecentDropdown(list);
+      if (currentKind === "live") renderLiveCards(list); else renderRecentDropdown(list);
     } catch (e) {
-      if (currentKind === "live")
-        document.getElementById("liveGrid").innerHTML = "<div class='empty-note'>Failed to load matches.</div>";
+      if (currentKind === "live") document.getElementById("liveGrid").innerHTML = "<div class='empty-note'>Failed to load matches.</div>";
     }
   }
 
   function renderLiveCards(list) {
     const grid = document.getElementById("liveGrid");
-    if (!list.length) {
-      grid.innerHTML = "<div class='empty-note'>No live matches right now. Try the Recent tab.</div>";
-      return;
-    }
+    if (!list.length) { grid.innerHTML = "<div class='empty-note'>No live matches right now. Try the Recent tab.</div>"; return; }
     grid.innerHTML = list.map(m => {
-      const scoreLines = (m.scores && m.scores.length)
-        ? `<div class="mcard-scores">${m.scores.map(s => `<div class="mscore">${s}</div>`).join("")}</div>` : "";
-      const teams = m.name.split(" — ")[0];
-      const desc = m.name.split(" — ")[1] || "";
-      return `
-      <div class="mcard" onclick="openMatch('${m.id}', ${JSON.stringify(teams).replace(/"/g,'&quot;')}, ${JSON.stringify(m.status).replace(/"/g,'&quot;')})">
+      const scoreLines = (m.scores && m.scores.length) ? `<div class="mcard-scores">${m.scores.map(s => `<div class="mscore">${s}</div>`).join("")}</div>` : "";
+      const teams = m.name.split(" — ")[0], desc = m.name.split(" — ")[1] || "";
+      return `<div class="mcard" onclick="openMatch('${m.id}', ${JSON.stringify(teams).replace(/"/g,'&quot;')}, ${JSON.stringify(m.status).replace(/"/g,'&quot;')})">
         <div class="live-tag"><span class="pulse"></span>Live</div>
-        <div class="teams">${teams}</div>
-        <div class="desc">${desc}</div>
-        ${scoreLines}
-        <div class="stat">${m.status}</div>
-        <span class="go-arrow">&rarr;</span>
-      </div>`;
+        <div class="teams">${teams}</div><div class="desc">${desc}</div>${scoreLines}
+        <div class="stat">${m.status}</div><span class="go-arrow">&rarr;</span></div>`;
     }).join("");
   }
-
   function renderRecentDropdown(list) {
     const sel = document.getElementById("matchSelect");
     if (!list.length) { sel.innerHTML = "<option value=''>No recent matches</option>"; return; }
     sel.innerHTML = "<option value=''>Select a match&hellip;</option>" +
       list.map(m => `<option value="${m.id}" data-name="${m.name.split(" — ")[0]}" data-status="${m.status}">${m.name}</option>`).join("");
-    sel.onchange = () => {
-      if (!sel.value) return;
-      const opt = sel.options[sel.selectedIndex];
-      openMatch(sel.value, opt.dataset.name, opt.dataset.status);
-    };
+    sel.onchange = () => { if (!sel.value) return; const o = sel.options[sel.selectedIndex]; openMatch(sel.value, o.dataset.name, o.dataset.status); };
   }
 
-  // ---- Open a match: switch to detail view, load scorecard ----
+  // ---- Open match: detail view, reset state, load scorecard ----
   async function openMatch(id, name, status) {
     selectedId = id; selectedName = name || "Match"; selectedStatus = status || "";
-    lastScorecard = null;
+    lastScorecard = null; analysisData = null; activeTab = "scorecard";
     showDetail();
-
-    document.getElementById("detailHead").innerHTML =
-      `<div class="detail-title">${selectedName}</div><div class="detail-meta">${selectedStatus}</div>`;
-
-    const ws = document.getElementById("workspace");
-    ws.innerHTML = `<div class="col-card"><div class="col-accent"></div>
-      <div class="col-inner"><div class="orbit"></div>
-      <div style="text-align:center;color:var(--ink-soft);font-size:13px">Loading scorecard&hellip;</div></div></div>`;
+    renderBanner();
+    renderTabs();
+    document.getElementById("tabContent").innerHTML =
+      `<div class="panel"><div class="panel-accent"></div><div class="panel-inner"><div class="orbit"></div>
+       <div style="text-align:center;color:var(--ink-soft);font-size:13px">Loading scorecard&hellip;</div></div></div>`;
     try {
       const res = await fetch(`/scorecard?match_id=${id}`);
       const data = await res.json();
       lastScorecard = data.scorecard;
-      renderWorkspace();
+      renderBanner();      // refresh banner now that we have innings totals
+      renderTabContent();
     } catch (e) {
-      ws.innerHTML = `<div class="col-card"><div class="col-inner">Couldn't load scorecard.</div></div>`;
+      document.getElementById("tabContent").innerHTML = `<div class="panel"><div class="panel-inner">Couldn't load scorecard.</div></div>`;
     }
   }
 
-  function renderWorkspace(analysis) {
-    const ws = document.getElementById("workspace");
-    const scHtml = renderScorecard(lastScorecard);
-    const rightHtml = analysis ? renderAnalysis(analysis)
-      : `<div class="analyze-panel">
-           <div class="ap-icon">✦</div>
-           <div class="ap-title">Ready to analyze</div>
-           <div class="ap-sub">Run the agent to read this match — key factors, a written analysis, and visual breakdowns.</div>
-           <button class="go" id="analyzeBtn" onclick="analyze()">Analyze this match</button>
-         </div>`;
-    ws.innerHTML = `
-      <div class="workspace">
-        <div class="col-card"><div class="col-accent"></div>
-          <div class="col-inner"><div class="col-head">Scorecard</div>
-            <div class="col-sub">Live &amp; detailed</div>${scHtml}</div></div>
-        <div id="rightCol">${rightHtml}</div>
-      </div>`;
-    requestAnimationFrame(() => setTimeout(animateBars, 80));
+  // ---- Pinned score banner (always on top) ----
+  function renderBanner() {
+    let scoresHtml = "";
+    if (lastScorecard && lastScorecard.available && lastScorecard.innings.length) {
+      scoresHtml = `<div class="sb-scores">${lastScorecard.innings.map(i => `
+        <div class="sb-score"><div class="sb-team">${i.team}</div>
+          <div class="sb-runs"><b>${i.score}</b>/${i.wickets}</div>
+          <div class="sb-ov">${i.overs} ov</div></div>`).join("")}</div>`;
+    }
+    document.getElementById("scoreBanner").innerHTML = `
+      <div class="score-banner"><div class="sb-accent"></div><div class="sb-inner">
+        <div class="sb-left"><div class="sb-title">${selectedName}</div><div class="sb-status">${selectedStatus}</div></div>
+        ${scoresHtml}
+      </div></div>`;
   }
 
-  async function analyze() {
-    const btn = document.getElementById("analyzeBtn");
-    btn.disabled = true;
-    document.getElementById("rightCol").innerHTML =
-      `<div class="analyze-panel"><div class="orbit"></div>
-       <div class="ap-sub" style="margin:0">Reading the match through the agent&hellip;</div></div>`;
+  // ---- Tab row ----
+  function renderTabs() {
+    const tabs = [
+      { id: "scorecard", label: "Scorecard" },
+      { id: "charts", label: "Charts" },
+      { id: "partnerships", label: "Partnerships" },
+      { id: "analysis", label: "✦ Analysis" },
+    ];
+    document.getElementById("dtabs").innerHTML = tabs.map(t =>
+      `<button class="dtab ${t.id === activeTab ? "active" : ""} ${t.id === "analysis" ? "analysis-tab" : ""}"
+        onclick="selectDetailTab('${t.id}')">${t.label}</button>`).join("");
+  }
+
+  function selectDetailTab(tab) {
+    activeTab = tab;
+    renderTabs();
+    if (tab === "analysis" && !analysisData) { runAnalysis(); return; }
+    renderTabContent();
+  }
+
+  // ---- Tab content router ----
+  function renderTabContent() {
+    const c = document.getElementById("tabContent");
+    if (activeTab === "scorecard") {
+      c.innerHTML = panel("Scorecard", renderScorecard(lastScorecard));
+    } else if (activeTab === "charts") {
+      c.innerHTML = panel("Run Progression", renderWormCharts(lastScorecard));
+      requestAnimationFrame(() => setTimeout(()=>{}, 10));
+    } else if (activeTab === "partnerships") {
+      c.innerHTML = panel("Partnerships", renderPartnershipCharts(lastScorecard));
+      requestAnimationFrame(() => setTimeout(animateBars, 80));
+    } else if (activeTab === "analysis") {
+      c.innerHTML = analysisData ? renderAnalysisPanel(analysisData)
+        : `<div class="panel"><div class="panel-accent"></div><div class="panel-inner">
+            <div class="analyze-cta"><div class="ap-icon">✦</div><div class="ap-title">Ready to analyze</div>
+            <div class="ap-sub">Run the agent to read this match — key factors and a written analysis.</div>
+            <button class="go" onclick="runAnalysis()">Analyze this match</button></div></div></div>`;
+    }
+  }
+
+  function panel(head, inner) {
+    return `<div class="panel"><div class="panel-accent"></div><div class="panel-inner">
+      <div class="panel-head">${head}</div>${inner}</div></div>`;
+  }
+
+  async function runAnalysis() {
+    document.getElementById("tabContent").innerHTML =
+      `<div class="panel"><div class="panel-accent"></div><div class="panel-inner"><div class="orbit"></div>
+       <div style="text-align:center;color:var(--ink-soft);font-size:13px">Reading the match through the agent&hellip;</div></div></div>`;
     try {
       const res = await fetch("/analyze", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ match_id: selectedId }),
       });
       const data = await res.json();
-      if (data.scorecard && data.scorecard.available) lastScorecard = data.scorecard;
-      renderWorkspace(data);
+      if (data.scorecard && data.scorecard.available) { lastScorecard = data.scorecard; renderBanner(); }
+      analysisData = data;
+      activeTab = "analysis"; renderTabs();
+      renderTabContent();
     } catch (e) {
-      document.getElementById("rightCol").innerHTML =
-        `<div class="analyze-panel"><div class="ap-sub">Something went wrong: ${e}</div></div>`;
+      document.getElementById("tabContent").innerHTML = `<div class="panel"><div class="panel-inner">Something went wrong: ${e}</div></div>`;
     }
   }
 
-  function renderAnalysis(data) {
-    const factors = data.turning_points.map(p =>
-      `<div class="factor">${p.replace(/^[\d.\-\u2022*\s]+/, "")}</div>`).join("");
-    return `<div class="col-card"><div class="col-accent"></div><div class="col-inner">
-        <div class="section-label">Key Factors</div>${factors}
-        <div class="section-label">The Analysis</div>
-        <div class="analysis-text">${data.analysis}</div>
-        <span class="badge"><span class="tick">${data.approved ? "\u2713" : "\u25CB"}</span>${data.approved ? "Approved by critic" : "Best effort"} &middot; ${data.revisions} revision(s)</span>
-        ${renderCharts(lastScorecard)}
-      </div></div>`;
+  function renderAnalysisPanel(data) {
+    const factors = data.turning_points.map(p => `<div class="factor">${p.replace(/^[\d.\-\u2022*\s]+/, "")}</div>`).join("");
+    return `<div class="panel"><div class="panel-accent"></div><div class="panel-inner">
+      <div class="section-label">Key Factors</div>${factors}
+      <div class="section-label">The Analysis</div>
+      <div class="analysis-text">${data.analysis}</div>
+      <span class="badge"><span class="tick">${data.approved ? "\u2713" : "\u25CB"}</span>${data.approved ? "Approved by critic" : "Best effort"} &middot; ${data.revisions} revision(s)</span>
+    </div></div>`;
   }
 
   function renderScorecard(scorecard) {
@@ -416,27 +400,25 @@
     return scorecard.innings.map((inn, idx) => {
       const batRows = inn.full_batting.map(b => `
         <tr><td><span class="bname">${b.name}</span>${b.out ? ` <span class="bout">${b.out}</span>` : ""}</td>
-          <td class="num r">${b.runs}</td><td class="num">${b.balls}</td>
-          <td class="num">${b.fours}</td><td class="num">${b.sixes}</td><td class="num">${b.sr}</td></tr>`).join("");
+          <td class="num r">${b.runs}</td><td class="num">${b.balls}</td><td class="num">${b.fours}</td>
+          <td class="num">${b.sixes}</td><td class="num">${b.sr}</td></tr>`).join("");
       const bowlRows = inn.full_bowling.map(b => `
-        <tr><td><span class="bname">${b.name}</span></td>
-          <td class="num">${b.overs}</td><td class="num">${b.maidens}</td>
+        <tr><td><span class="bname">${b.name}</span></td><td class="num">${b.overs}</td><td class="num">${b.maidens}</td>
           <td class="num">${b.runs}</td><td class="num r">${b.wickets}</td><td class="num">${b.econ}</td></tr>`).join("");
       const openClass = idx === 0 ? "open" : "";
       return `<div class="sc-innings ${openClass}">
-          <div class="sc-header" onclick="this.parentElement.classList.toggle('open')">
-            <span class="sc-team">${inn.team} <span class="sc-score">${inn.score}/${inn.wickets}</span>
-              <span style="opacity:0.85;font-weight:400">(${inn.overs} ov)</span></span>
-            <span class="chev">&#9662;</span></div>
-          <div class="sc-body">
-            <div class="sc-subhead">Batting</div>
-            <table class="sc"><tr><th>Batter</th><th class="num">R</th><th class="num">B</th>
-              <th class="num">4s</th><th class="num">6s</th><th class="num">SR</th></tr>${batRows}</table>
-            <div class="sc-extras">Extras: ${inn.extras_total}</div>
-            <div class="sc-subhead">Bowling</div>
-            <table class="sc"><tr><th>Bowler</th><th class="num">O</th><th class="num">M</th>
-              <th class="num">R</th><th class="num">W</th><th class="num">Econ</th></tr>${bowlRows}</table>
-          </div></div>`;
+        <div class="sc-header" onclick="this.parentElement.classList.toggle('open')">
+          <span class="sc-team">${inn.team} <span class="sc-score">${inn.score}/${inn.wickets}</span>
+            <span style="opacity:0.85;font-weight:400">(${inn.overs} ov)</span></span><span class="chev">&#9662;</span></div>
+        <div class="sc-body">
+          <div class="sc-subhead">Batting</div>
+          <table class="sc"><tr><th>Batter</th><th class="num">R</th><th class="num">B</th><th class="num">4s</th>
+            <th class="num">6s</th><th class="num">SR</th></tr>${batRows}</table>
+          <div class="sc-extras">Extras: ${inn.extras_total}</div>
+          <div class="sc-subhead">Bowling</div>
+          <table class="sc"><tr><th>Bowler</th><th class="num">O</th><th class="num">M</th><th class="num">R</th>
+            <th class="num">W</th><th class="num">Econ</th></tr>${bowlRows}</table>
+        </div></div>`;
     }).join("");
   }
 
@@ -450,34 +432,31 @@
     let pts = [[x(0), y(0)]];
     fow.forEach(f => pts.push([x(f.over), y(f.runs)]));
     const path = pts.map((p, i) => (i === 0 ? "M" : "L") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
-    const dots = fow.map(f =>
-      `<circle class="wk" cx="${x(f.over).toFixed(1)}" cy="${y(f.runs).toFixed(1)}" r="3.5"/>
-       <text class="wlabel" x="${x(f.over).toFixed(1)}" y="${(y(f.runs)-7).toFixed(1)}" text-anchor="middle">${f.runs}</text>`).join("");
+    const dots = fow.map(f => `<circle class="wk" cx="${x(f.over).toFixed(1)}" cy="${y(f.runs).toFixed(1)}" r="3.5"/>
+      <text class="wlabel" x="${x(f.over).toFixed(1)}" y="${(y(f.runs)-7).toFixed(1)}" text-anchor="middle">${f.runs}</text>`).join("");
     let grid = "";
-    for (let i = 1; i <= 3; i++) { const gy = padY + (i/4)*(H-padY*2);
-      grid += `<line class="grid" x1="${padX}" y1="${gy}" x2="${W-padX}" y2="${gy}"/>`; }
+    for (let i = 1; i <= 3; i++) { const gy = padY + (i/4)*(H-padY*2); grid += `<line class="grid" x1="${padX}" y1="${gy}" x2="${W-padX}" y2="${gy}"/>`; }
     return `<svg class="worm-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${grid}<path class="line" d="${path}"/>${dots}</svg>`;
   }
-  function buildPartnerships(plist) {
-    if (!plist || !plist.length) return "<div class='chart-sub'>No partnership data.</div>";
-    const peak = Math.max(...plist.map(p => p.runs), 1);
-    return plist.map(p => { const pct = (p.runs/peak)*100;
-      return `<div class="pbar-row"><div class="pbar-label">${p.pair}</div>
-        <div class="pbar-track"><div class="pbar-fill" data-w="${pct.toFixed(0)}"></div></div>
-        <div class="pbar-val">${p.runs}</div></div>`; }).join("");
+  function renderWormCharts(sc) {
+    if (!sc || !sc.available || !sc.innings.length) return "<div class='empty-note'>No data.</div>";
+    return sc.innings.map(inn => `<div class="chart-card"><div class="chart-title">${inn.team}</div>
+      <div class="chart-sub">Score climbing as wickets fell (red dots = wickets)</div>${buildWorm(inn.fall_of_wickets, inn.score)}</div>`).join("");
   }
-  function renderCharts(scorecard) {
-    if (!scorecard || !scorecard.available || !scorecard.innings.length) return "";
-    const blocks = scorecard.innings.map(inn => `
-      <div class="chart-card"><div class="chart-title">${inn.team} — Run Progression</div>
-        <div class="chart-sub">Score climbing as wickets fell</div>${buildWorm(inn.fall_of_wickets, inn.score)}</div>
-      <div class="chart-card"><div class="chart-title">${inn.team} — Partnerships</div>
-        <div class="chart-sub">Runs added in each stand</div>${buildPartnerships(inn.all_partnerships)}</div>`).join("");
-    return `<div class="section-label">Visual Breakdown</div>${blocks}`;
+  function renderPartnershipCharts(sc) {
+    if (!sc || !sc.available || !sc.innings.length) return "<div class='empty-note'>No data.</div>";
+    return sc.innings.map(inn => {
+      const pl = inn.all_partnerships || [];
+      const bars = pl.length ? (() => { const peak = Math.max(...pl.map(p=>p.runs),1);
+        return pl.map(p => { const pct=(p.runs/peak)*100;
+          return `<div class="pbar-row"><div class="pbar-label">${p.pair}</div>
+            <div class="pbar-track"><div class="pbar-fill" data-w="${pct.toFixed(0)}"></div></div>
+            <div class="pbar-val">${p.runs}</div></div>`; }).join(""); })() : "<div class='chart-sub'>No partnership data.</div>";
+      return `<div class="chart-card"><div class="chart-title">${inn.team}</div>
+        <div class="chart-sub">Runs added in each stand</div>${bars}</div>`;
+    }).join("");
   }
-  function animateBars() {
-    document.querySelectorAll(".pbar-fill").forEach(el => { el.style.width = el.dataset.w + "%"; });
-  }
+  function animateBars() { document.querySelectorAll(".pbar-fill").forEach(el => { el.style.width = el.dataset.w + "%"; }); }
 
   switchTab("live");
 </script>
