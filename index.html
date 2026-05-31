@@ -37,8 +37,9 @@
     background: linear-gradient(145deg, var(--green), var(--green-bright));
     display: grid; place-items: center; color: #fff;
     font-family: "Fraunces", serif; font-weight: 900; font-size: 20px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-sm); cursor: pointer;
   }
+  .brand { cursor: pointer; }
   .brand h1 { font-family: "Fraunces", serif; font-weight: 600; font-size: 21px;
     letter-spacing: -0.01em; line-height: 1; }
   .brand .sub { font-size: 11px; color: var(--ink-soft); letter-spacing: 0.16em;
@@ -75,7 +76,6 @@
     padding: 16px; cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow-sm);
     position: relative; overflow: hidden; }
   .mcard:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--green-bright); }
-  .mcard.selected { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-wash), var(--shadow-md); }
   .mcard .live-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10px;
     font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; }
   .mcard .live-tag .pulse { width: 6px; height: 6px; }
@@ -86,6 +86,9 @@
   .mcard .mscore { font-family: "Fraunces", serif; font-weight: 600; font-size: 15px;
     color: var(--ink); line-height: 1.35; }
   .mcard .stat { font-size: 12px; color: var(--green); font-weight: 600; margin-top: 4px; }
+  .mcard .go-arrow { position: absolute; right: 14px; bottom: 14px; color: var(--ink-soft);
+    opacity: 0; transition: all 0.2s; font-size: 16px; }
+  .mcard:hover .go-arrow { opacity: 1; right: 12px; color: var(--green); }
   .empty-note { color: var(--ink-soft); font-size: 14px; padding: 20px 0; }
 
   /* ---- Recent dropdown ---- */
@@ -99,8 +102,20 @@
     font-family: "Outfit"; font-size: 14px; color: var(--ink); cursor: pointer; box-shadow: var(--shadow-sm); }
   select:focus { outline: none; border-color: var(--green-bright); box-shadow: 0 0 0 3px rgba(18,163,116,0.12); }
 
+  /* ---- Back button ---- */
+  .back-btn { display: inline-flex; align-items: center; gap: 7px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 100px; padding: 9px 18px 9px 14px;
+    font-family: "Outfit"; font-size: 13px; font-weight: 600; color: var(--ink);
+    cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.2s; margin-bottom: 20px; }
+  .back-btn:hover { transform: translateX(-2px); border-color: var(--green-bright); color: var(--green); }
+  .back-btn .arr { font-size: 16px; line-height: 1; }
+
+  .detail-title { font-family: "Fraunces", serif; font-weight: 600; font-size: 30px;
+    letter-spacing: -0.02em; margin-bottom: 4px; }
+  .detail-meta { font-size: 13px; color: var(--ink-soft); margin-bottom: 4px; }
+
   /* ---- Two-column workspace ---- */
-  .workspace { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px;
+  .workspace { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;
     align-items: start; }
   .col-card { background: var(--card); border: 1px solid var(--line); border-radius: 20px;
     box-shadow: var(--shadow-lg); overflow: hidden; animation: rise 0.5s cubic-bezier(0.2,0.7,0.2,1) both; }
@@ -108,12 +123,9 @@
   .col-inner { padding: 22px 24px 26px; }
   .col-head { font-family: "Fraunces", serif; font-size: 22px; font-weight: 600;
     letter-spacing: -0.01em; margin-bottom: 4px; }
-  .col-sub { font-size: 12px; color: var(--ink-soft); margin-bottom: 16px;
-    display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .col-sub .res { color: var(--green); font-weight: 600; background: var(--green-wash);
-    padding: 3px 10px; border-radius: 100px; }
+  .col-sub { font-size: 12px; color: var(--ink-soft); margin-bottom: 16px; }
 
-  /* ---- Compact scorecard (Cricbuzz-style) ---- */
+  /* ---- Compact scorecard ---- */
   .sc-innings { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
   .sc-header { padding: 11px 14px; cursor: pointer; display: flex; justify-content: space-between;
     align-items: center; background: var(--green); color: #fff; }
@@ -128,7 +140,6 @@
     text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
     background: var(--line-soft); border-bottom: 1px solid var(--line); }
   table.sc th.num, table.sc td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  /* tight line spacing as in the reference */
   table.sc td { padding: 5px 14px; border-bottom: 1px solid var(--line-soft); line-height: 1.3; }
   table.sc tr:last-child td { border-bottom: none; }
   table.sc td .bname { font-weight: 600; color: var(--green); }
@@ -138,7 +149,7 @@
     text-transform: uppercase; letter-spacing: 0.1em; }
   .sc-extras { padding: 6px 14px; font-size: 11px; color: var(--ink-soft); background: var(--paper); }
 
-  /* ---- Analyze side panel ---- */
+  /* ---- Analyze panel ---- */
   .analyze-panel { background: var(--card); border: 1px solid var(--line); border-radius: 20px;
     box-shadow: var(--shadow-lg); padding: 24px; text-align: center; animation: rise 0.5s 0.06s cubic-bezier(0.2,0.7,0.2,1) both; }
   .analyze-panel .ap-icon { width: 46px; height: 46px; margin: 0 auto 14px; border-radius: 13px;
@@ -159,7 +170,6 @@
   .orbit::after { border-bottom-color: var(--gold); animation: spin 1.4s linear infinite reverse; inset: 7px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* analysis content inside right column */
   .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em;
     color: var(--gold); margin: 22px 0 12px; display: flex; align-items: center; gap: 10px; }
   .section-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
@@ -176,7 +186,6 @@
     border-radius: 100px; letter-spacing: 0.04em; }
   .badge .tick { color: var(--green-bright); }
 
-  /* charts */
   .chart-card { background: var(--paper); border: 1px solid var(--line-soft); border-radius: 14px;
     padding: 16px 18px; margin-bottom: 12px; }
   .chart-title { font-family: "Fraunces", serif; font-size: 15px; font-weight: 600; margin-bottom: 3px; }
@@ -199,7 +208,7 @@
   .pbar-val { font-size: 11.5px; font-weight: 600; width: 30px; color: var(--green); }
 
   @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-  .hidden { display: none; }
+  .hidden { display: none !important; }
 
   @media (max-width: 860px) {
     .workspace { grid-template-columns: 1fr; }
@@ -210,39 +219,64 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="crest">C</div>
-    <div class="brand"><h1>Cricket Analyst</h1><div class="sub">AI Match Intelligence</div></div>
+    <div class="crest" onclick="showList()">C</div>
+    <div class="brand" onclick="showList()"><h1>Cricket Analyst</h1><div class="sub">AI Match Intelligence</div></div>
     <div class="pill"><span class="pulse"></span>Live</div>
   </header>
 
   <div class="wrap">
-    <div class="hero">
-      <div class="eyebrow">Powered by an autonomous agent</div>
-      <h2>Every innings, <em>read</em> like an analyst would.</h2>
-    </div>
+    <!-- ============ LIST VIEW ============ -->
+    <div id="listView">
+      <div class="hero">
+        <div class="eyebrow">Powered by an autonomous agent</div>
+        <h2>Every innings, <em>read</em> like an analyst would.</h2>
+      </div>
 
-    <div class="tabs">
-      <button class="tab active" id="tab-live" onclick="switchTab('live')"><span class="livedot"></span>Live</button>
-      <button class="tab" id="tab-recent" onclick="switchTab('recent')">Recent</button>
-    </div>
+      <div class="tabs">
+        <button class="tab active" id="tab-live" onclick="switchTab('live')"><span class="livedot"></span>Live</button>
+        <button class="tab" id="tab-recent" onclick="switchTab('recent')">Recent</button>
+      </div>
 
-    <!-- Live: visual cards -->
-    <div id="liveGrid" class="live-grid"></div>
-    <!-- Recent: dropdown -->
-    <div id="recentPick" class="recent-pick">
-      <div class="select-wrap">
-        <select id="matchSelect"><option value="">Loading matches&hellip;</option></select>
+      <div id="liveGrid" class="live-grid"></div>
+      <div id="recentPick" class="recent-pick">
+        <div class="select-wrap">
+          <select id="matchSelect"><option value="">Loading matches&hellip;</option></select>
+        </div>
       </div>
     </div>
 
-    <!-- Workspace: scorecard (left) + analysis (right) -->
-    <div id="workspace"></div>
+    <!-- ============ DETAIL VIEW ============ -->
+    <div id="detailView" class="hidden">
+      <button class="back-btn" onclick="showList()"><span class="arr">&larr;</span> All matches</button>
+      <div id="detailHead"></div>
+      <div id="workspace"></div>
+    </div>
   </div>
 
 <script>
   let currentKind = "live";
   let selectedId = "";
+  let selectedName = "";
+  let selectedStatus = "";
   let lastScorecard = null;
+
+  // ---- View switching ----
+  function showList() {
+    document.getElementById("detailView").classList.add("hidden");
+    document.getElementById("listView").classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  function showDetail() {
+    document.getElementById("listView").classList.add("hidden");
+    document.getElementById("detailView").classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+    // push a history entry so the browser/phone back button returns to the list
+    history.pushState({ view: "detail" }, "");
+  }
+  // browser/phone back button -> return to list
+  window.addEventListener("popstate", () => {
+    if (!document.getElementById("detailView").classList.contains("hidden")) showList();
+  });
 
   function switchTab(kind) {
     currentKind = kind;
@@ -250,8 +284,6 @@
     document.getElementById("tab-recent").classList.toggle("active", kind === "recent");
     document.getElementById("liveGrid").style.display = kind === "live" ? "grid" : "none";
     document.getElementById("recentPick").classList.toggle("show", kind === "recent");
-    document.getElementById("workspace").innerHTML = "";
-    selectedId = "";
     loadMatches();
   }
 
@@ -276,15 +308,17 @@
     }
     grid.innerHTML = list.map(m => {
       const scoreLines = (m.scores && m.scores.length)
-        ? `<div class="mcard-scores">${m.scores.map(s => `<div class="mscore">${s}</div>`).join("")}</div>`
-        : "";
+        ? `<div class="mcard-scores">${m.scores.map(s => `<div class="mscore">${s}</div>`).join("")}</div>` : "";
+      const teams = m.name.split(" — ")[0];
+      const desc = m.name.split(" — ")[1] || "";
       return `
-      <div class="mcard" data-id="${m.id}" onclick="selectMatch('${m.id}', this)">
+      <div class="mcard" onclick="openMatch('${m.id}', ${JSON.stringify(teams).replace(/"/g,'&quot;')}, ${JSON.stringify(m.status).replace(/"/g,'&quot;')})">
         <div class="live-tag"><span class="pulse"></span>Live</div>
-        <div class="teams">${m.name.split(" — ")[0]}</div>
-        <div class="desc">${(m.name.split(" — ")[1] || "")}</div>
+        <div class="teams">${teams}</div>
+        <div class="desc">${desc}</div>
         ${scoreLines}
         <div class="stat">${m.status}</div>
+        <span class="go-arrow">&rarr;</span>
       </div>`;
     }).join("");
   }
@@ -293,22 +327,27 @@
     const sel = document.getElementById("matchSelect");
     if (!list.length) { sel.innerHTML = "<option value=''>No recent matches</option>"; return; }
     sel.innerHTML = "<option value=''>Select a match&hellip;</option>" +
-      list.map(m => `<option value="${m.id}">${m.name}</option>`).join("");
-    sel.onchange = () => { if (sel.value) selectMatch(sel.value, null); };
+      list.map(m => `<option value="${m.id}" data-name="${m.name.split(" — ")[0]}" data-status="${m.status}">${m.name}</option>`).join("");
+    sel.onchange = () => {
+      if (!sel.value) return;
+      const opt = sel.options[sel.selectedIndex];
+      openMatch(sel.value, opt.dataset.name, opt.dataset.status);
+    };
   }
 
-  // Selecting a match loads the scorecard instantly (no agent run)
-  async function selectMatch(id, cardEl) {
-    selectedId = id;
-    if (cardEl) {
-      document.querySelectorAll(".mcard").forEach(c => c.classList.remove("selected"));
-      cardEl.classList.add("selected");
-    }
+  // ---- Open a match: switch to detail view, load scorecard ----
+  async function openMatch(id, name, status) {
+    selectedId = id; selectedName = name || "Match"; selectedStatus = status || "";
+    lastScorecard = null;
+    showDetail();
+
+    document.getElementById("detailHead").innerHTML =
+      `<div class="detail-title">${selectedName}</div><div class="detail-meta">${selectedStatus}</div>`;
+
     const ws = document.getElementById("workspace");
     ws.innerHTML = `<div class="col-card"><div class="col-accent"></div>
       <div class="col-inner"><div class="orbit"></div>
       <div style="text-align:center;color:var(--ink-soft);font-size:13px">Loading scorecard&hellip;</div></div></div>`;
-
     try {
       const res = await fetch(`/scorecard?match_id=${id}`);
       const data = await res.json();
@@ -319,32 +358,23 @@
     }
   }
 
-  // Build the two-column workspace: scorecard left, analyze panel right
   function renderWorkspace(analysis) {
     const ws = document.getElementById("workspace");
     const scHtml = renderScorecard(lastScorecard);
-
-    const rightHtml = analysis
-      ? renderAnalysis(analysis)
+    const rightHtml = analysis ? renderAnalysis(analysis)
       : `<div class="analyze-panel">
            <div class="ap-icon">✦</div>
            <div class="ap-title">Ready to analyze</div>
            <div class="ap-sub">Run the agent to read this match — key factors, a written analysis, and visual breakdowns.</div>
            <button class="go" id="analyzeBtn" onclick="analyze()">Analyze this match</button>
          </div>`;
-
     ws.innerHTML = `
       <div class="workspace">
         <div class="col-card"><div class="col-accent"></div>
-          <div class="col-inner">
-            <div class="col-head">Scorecard</div>
-            <div class="col-sub">Live & detailed</div>
-            ${scHtml}
-          </div>
-        </div>
+          <div class="col-inner"><div class="col-head">Scorecard</div>
+            <div class="col-sub">Live &amp; detailed</div>${scHtml}</div></div>
         <div id="rightCol">${rightHtml}</div>
       </div>`;
-
     requestAnimationFrame(() => setTimeout(animateBars, 80));
   }
 
@@ -372,8 +402,7 @@
     const factors = data.turning_points.map(p =>
       `<div class="factor">${p.replace(/^[\d.\-\u2022*\s]+/, "")}</div>`).join("");
     return `<div class="col-card"><div class="col-accent"></div><div class="col-inner">
-        <div class="section-label">Key Factors</div>
-        ${factors}
+        <div class="section-label">Key Factors</div>${factors}
         <div class="section-label">The Analysis</div>
         <div class="analysis-text">${data.analysis}</div>
         <span class="badge"><span class="tick">${data.approved ? "\u2713" : "\u25CB"}</span>${data.approved ? "Approved by critic" : "Best effort"} &middot; ${data.revisions} revision(s)</span>
@@ -381,11 +410,9 @@
       </div></div>`;
   }
 
-  // ---- Compact scorecard ----
   function renderScorecard(scorecard) {
     if (!scorecard || !scorecard.available || !scorecard.innings.length)
       return "<div class='empty-note'>No scorecard available for this match yet.</div>";
-
     return scorecard.innings.map((inn, idx) => {
       const batRows = inn.full_batting.map(b => `
         <tr><td><span class="bname">${b.name}</span>${b.out ? ` <span class="bout">${b.out}</span>` : ""}</td>
@@ -400,8 +427,7 @@
           <div class="sc-header" onclick="this.parentElement.classList.toggle('open')">
             <span class="sc-team">${inn.team} <span class="sc-score">${inn.score}/${inn.wickets}</span>
               <span style="opacity:0.85;font-weight:400">(${inn.overs} ov)</span></span>
-            <span class="chev">&#9662;</span>
-          </div>
+            <span class="chev">&#9662;</span></div>
           <div class="sc-body">
             <div class="sc-subhead">Batting</div>
             <table class="sc"><tr><th>Batter</th><th class="num">R</th><th class="num">B</th>
@@ -410,12 +436,10 @@
             <div class="sc-subhead">Bowling</div>
             <table class="sc"><tr><th>Bowler</th><th class="num">O</th><th class="num">M</th>
               <th class="num">R</th><th class="num">W</th><th class="num">Econ</th></tr>${bowlRows}</table>
-          </div>
-        </div>`;
+          </div></div>`;
     }).join("");
   }
 
-  // ---- Charts ----
   function buildWorm(fow, finalScore) {
     if (!fow || !fow.length) return "<div class='chart-sub'>No wicket data yet.</div>";
     const W = 520, H = 170, padX = 28, padY = 18;
@@ -451,7 +475,6 @@
         <div class="chart-sub">Runs added in each stand</div>${buildPartnerships(inn.all_partnerships)}</div>`).join("");
     return `<div class="section-label">Visual Breakdown</div>${blocks}`;
   }
-
   function animateBars() {
     document.querySelectorAll(".pbar-fill").forEach(el => { el.style.width = el.dataset.w + "%"; });
   }
