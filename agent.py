@@ -8,6 +8,13 @@ load_dotenv()
 from typing import TypedDict
 from langgraph.graph import StateGraph, START, END
 
+RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
+RAPIDAPI_HOST = "cricbuzz-cricket.p.rapidapi.com"
+RAPIDAPI_HEADERS = {
+    "x-rapidapi-key": RAPIDAPI_KEY,
+    "x-rapidapi-host": RAPIDAPI_HOST,
+}
+
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 CRICKET_API_KEY = os.getenv("CRICKET_API_KEY")
 
@@ -17,6 +24,7 @@ CRICKET_API_KEY = os.getenv("CRICKET_API_KEY")
 class MatchState(TypedDict):
     match_id: str
     raw_data: dict
+    scorecard: dict
     stats: dict
     turning_points: list
     analysis: str
@@ -26,45 +34,79 @@ class MatchState(TypedDict):
 
 
 # ---------------------------------------------------------------
-# NODE: fetch_match — for now, hands over the mock innings.
-# (Later this is the only node that changes to call a real API.)
+# Helper: dig through Cricbuzz's nested match-list structure
+# ---------------------------------------------------------------
+def _extract_matches(payload: dict) -> list:
+    """Dig through Cricbuzz's nested structure and return a flat list of matches.
+    Each item is the raw match dict with 'matchInfo' and (maybe) 'matchScore'."""
+    flat = []
+    for type_block in payload.get("typeMatches", []):
+        for series in type_block.get("seriesMatches", []):
+            wrapper = series.get("seriesAdWrapper", {})
+            for match in wrapper.get("matches", []):
+                flat.append(match)
+    return flat
+
+
+# ---------------------------------------------------------------
+# NODE: fetch_match — find the match (live or recent) and flatten totals
 # ---------------------------------------------------------------
 def fetch_match(state: MatchState) -> dict:
-    print("→ [fetch_match] calling live cricket API")
+    print("→ [fetch_match] calling Cricbuzz API")
 
-    # Call the live API for current matches.
-    url = "https://api.cricapi.com/v1/matches?apikey=26cd9747-30bb-4b7e-870e-8ee5926ecf3f&offset=0"
-    resp = requests.get(url, params={"apikey": CRICKET_API_KEY, "offset": 0})
-    payload = resp.json()
+    wanted_id = state.get("match_id", "")
 
-    matches = payload.get("data", [])
-    if not matches:
+    # Search BOTH live and recent so we find the match regardless of tab.
+    all_matches = []
+    for endpoint in ["live", "recent"]:
+        url = f"https://{RAPIDAPI_HOST}/matches/v1/{endpoint}"
+        resp = requests.get(url, headers=RAPIDAPI_HEADERS)
+        if resp.status_code == 200:
+            all_matches.extend(_extract_matches(resp.json()))
+
+    if not all_matches:
         raise ValueError("No matches returned by the API right now.")
 
-    # Pick the match: if the user gave a real id, find it; else take the first
-    # one that actually has a score recorded.
+    # Find the requested match by id.
     chosen = None
-    wanted_id = state.get("match_id", "")
-    for m in matches:
-        if m.get("id") == wanted_id:
+    for m in all_matches:
+        if str(m.get("matchInfo", {}).get("matchId", "")) == wanted_id:
             chosen = m
             break
-    if chosen is None:
-        # fall back to the first match that has score data
-        for m in matches:
-            if m.get("score"):
+    # Only fall back if NO id was requested at all.
+    if chosen is None and not wanted_id:
+        for m in all_matches:
+            if m.get("matchScore"):
                 chosen = m
                 break
     if chosen is None:
-        chosen = matches[0]
+        raise ValueError(f"Match id {wanted_id} not found in live or recent.")
 
-    # --- Reshape API response into our clean internal structure ---
+    info = chosen.get("matchInfo", {})
+    score = chosen.get("matchScore", {})
+
+    innings = []
+    for team_key, team_obj in [("team1", "team1Score"), ("team2", "team2Score")]:
+        team_name = info.get(team_key, {}).get("teamName", "Team")
+        team_score = score.get(team_obj, {})
+        for inn_key in sorted(team_score.keys()):
+            inn = team_score[inn_key]
+            innings.append({
+                "team": team_name,
+                "runs": inn.get("runs", 0),
+                "wickets": inn.get("wickets", 0),
+                "overs": inn.get("overs", 0),
+            })
+
     raw = {
-        "name": chosen.get("name", "Unknown match"),
-        "status": chosen.get("status", ""),
-        "venue": chosen.get("venue", ""),
-        "match_type": chosen.get("matchType", ""),
-        "innings": chosen.get("score", []),   # list of {r, w, o, inning}
+        "match_id": str(info.get("matchId", "")),
+        "name": f"{info.get('team1', {}).get('teamName', '?')} vs "
+                f"{info.get('team2', {}).get('teamName', '?')}",
+        "status": info.get("status", ""),
+        "venue": f"{info.get('venueInfo', {}).get('ground', '')}, "
+                 f"{info.get('venueInfo', {}).get('city', '')}",
+        "match_type": info.get("matchFormat", ""),
+        "innings": innings,
     }
 
     print(f"   matched: {raw['name']}")
@@ -72,26 +114,201 @@ def fetch_match(state: MatchState) -> dict:
 
 
 # ---------------------------------------------------------------
-# NODE: compute_stats — REAL cricket math now (pure Python).
+# NODE: fetch_scorecard — pull detailed player data for a match
+# ---------------------------------------------------------------
+def fetch_scorecard(state: MatchState) -> dict:
+    print("→ [fetch_scorecard] pulling player detail")
+    match_id = state["raw_data"].get("match_id", "")
+
+    if not match_id:
+        print("   no match_id; skipping scorecard")
+        return {"scorecard": {"available": False, "innings": []}}
+
+    url = f"https://{RAPIDAPI_HOST}/mcenter/v1/{match_id}/scard"
+    resp = requests.get(url, headers=RAPIDAPI_HEADERS)
+
+    if resp.status_code != 200:
+        print(f"   scorecard unavailable ({resp.status_code}); continuing with totals only")
+        return {"scorecard": {"available": False, "innings": []}}
+
+    payload = resp.json()
+    innings_detail = []
+
+    for inn in payload.get("scorecard", []):
+        # --- FIX: only include batsmen who ACTUALLY batted ---
+        # In a live match the scorecard lists players yet to bat (0 balls, no
+        # dismissal). Those look identical to a duck and cause hallucinated
+        # dismissals, so we exclude them entirely.
+        batted = [
+            b for b in inn.get("batsman", [])
+            if b.get("balls", 0) > 0 or b.get("outdec", "").strip()
+        ]
+
+        # Top 3 batsmen by runs (curated, for the LLM) — from those who batted
+        batsmen = sorted(batted, key=lambda b: b.get("runs", 0), reverse=True)[:3]
+        top_bat = [
+            {"name": b.get("name", ""), "runs": b.get("runs", 0),
+             "balls": b.get("balls", 0), "fours": b.get("fours", 0),
+             "sixes": b.get("sixes", 0)}
+            for b in batsmen
+        ]
+
+        # Top 3 bowlers by wickets (curated, for the LLM)
+        bowlers = sorted(
+            inn.get("bowler", []),
+            key=lambda b: b.get("wickets", 0),
+            reverse=True,
+        )[:3]
+        top_bowl = [
+            {"name": b.get("name", ""), "wickets": b.get("wickets", 0),
+             "runs": b.get("runs", 0), "overs": b.get("overs", "0")}
+            for b in bowlers
+        ]
+
+        # Best partnership by total runs (curated, for the LLM)
+        plist = inn.get("partnership", {}).get("partnership", [])
+        best_p = max(plist, key=lambda p: p.get("totalruns", 0), default=None)
+        best_partnership = None
+        if best_p:
+            best_partnership = {
+                "bat1": best_p.get("bat1name", ""),
+                "bat2": best_p.get("bat2name", ""),
+                "runs": best_p.get("totalruns", 0),
+                "balls": best_p.get("totalballs", 0),
+            }
+
+        # FULL batting list for UI display — also only those who batted
+        full_batting = [
+            {"name": b.get("name", ""), "runs": b.get("runs", 0),
+             "balls": b.get("balls", 0), "fours": b.get("fours", 0),
+             "sixes": b.get("sixes", 0), "sr": b.get("strkrate", ""),
+             "out": b.get("outdec", "")}
+            for b in batted
+        ]
+        full_bowling = [
+            {"name": b.get("name", ""), "overs": b.get("overs", "0"),
+             "maidens": b.get("maidens", 0), "runs": b.get("runs", 0),
+             "wickets": b.get("wickets", 0), "econ": b.get("economy", "")}
+            for b in inn.get("bowler", [])
+        ]
+        extras = inn.get("extras", {})
+
+        # Fall of wickets (for the worm / run-progression chart)
+        fow_list = inn.get("fow", {}).get("fow", [])
+        fall_of_wickets = [
+            {"name": f.get("batsmanname", ""), "runs": f.get("runs", 0),
+             "over": f.get("overnbr", 0)}
+            for f in fow_list
+        ]
+
+        # All partnerships (for the partnership bar chart)
+        all_partnerships = [
+            {"pair": f"{p.get('bat1name','')} & {p.get('bat2name','')}",
+             "runs": p.get("totalruns", 0)}
+            for p in plist
+        ]
+
+        innings_detail.append({
+            "team": inn.get("batteamname", "Team"),
+            "score": inn.get("score", 0),
+            "wickets": inn.get("wickets", 0),
+            "overs": inn.get("overs", 0),
+            "top_batsmen": top_bat,
+            "top_bowlers": top_bowl,
+            "best_partnership": best_partnership,
+            "full_batting": full_batting,
+            "full_bowling": full_bowling,
+            "extras_total": extras.get("total", 0),
+            "fall_of_wickets": fall_of_wickets,
+            "all_partnerships": all_partnerships,
+        })
+
+    return {"scorecard": {"available": True, "innings": innings_detail}}
+
+def get_scorecard_only(match_id: str) -> dict:
+    """Fetch just the scorecard for a match id — no agent run."""
+    fake_state = {"raw_data": {"match_id": match_id}}
+    return fetch_scorecard(fake_state)["scorecard"]
+
+
+def _format_scorecard(scorecard: dict) -> str:
+    """Turn curated scorecard data into readable lines for the LLM prompt."""
+    if not scorecard.get("available"):
+        return "No detailed scorecard available — analyse from totals only."
+
+    lines = []
+    for inn in scorecard.get("innings", []):
+        lines.append(f"\n{inn['team']} — {inn['score']}/{inn['wickets']} ({inn['overs']} ov)")
+
+        bat = inn.get("top_batsmen", [])
+        if bat:
+            bat_str = ", ".join(
+                f"{b['name']} {b['runs']}({b['balls']})" for b in bat
+            )
+            lines.append(f"  Top batting: {bat_str}")
+
+        bowl = inn.get("top_bowlers", [])
+        if bowl:
+            bowl_str = ", ".join(
+                f"{b['name']} {b['wickets']}/{b['runs']}" for b in bowl
+            )
+            lines.append(f"  Top bowling: {bowl_str}")
+
+        p = inn.get("best_partnership")
+        if p:
+            lines.append(f"  Best stand: {p['bat1']} & {p['bat2']} ({p['runs']} runs)")
+
+    return "\n".join(lines)
+
+
+def _valid_player_names(scorecard: dict) -> set:
+    """Collect every real player name in the scorecard, for fact-checking."""
+    names = set()
+    for inn in scorecard.get("innings", []):
+        for b in inn.get("full_batting", []):
+            if b.get("name"):
+                names.add(b["name"])
+        for b in inn.get("full_bowling", []):
+            if b.get("name"):
+                names.add(b["name"])
+    return names
+
+
+# Shared accuracy rules injected into the writing prompts.
+ACCURACY_RULES = """CRITICAL ACCURACY RULES:
+- The wickets number in the totals is AUTHORITATIVE. If an innings shows "/0", NO player is out — never describe any dismissal or collapse for that innings.
+- Only discuss players who appear in the player detail below. NEVER name a player who is not listed.
+- If the match status shows it is still in progress, describe it as ongoing — do not invent a final result or a collapse that has not happened.
+- Never contradict the numbers. If unsure, describe less rather than inventing."""
+
+
+# ---------------------------------------------------------------
+# NODE: compute_stats — pure Python cricket math
 # ---------------------------------------------------------------
 def compute_stats(state: MatchState) -> dict:
     print("→ [compute_stats] crunching numbers")
     raw = state["raw_data"]
-    innings_list = raw["innings"]
 
-    # Build a clean per-innings stats list.
     innings_stats = []
-    for inn in innings_list:
-        runs = inn.get("r", 0)
-        wickets = inn.get("w", 0)
-        overs = inn.get("o", 0)
-        # run rate = runs / overs, guard against divide-by-zero
-        run_rate = round(runs / overs, 2) if overs else 0.0
+    for inn in raw["innings"]:
+        runs = inn.get("runs", 0) or 0
+        wickets = inn.get("wickets", 0) or 0
+        overs_raw = inn.get("overs", 0) or 0      # guard against None
+
+        # Convert "19.6" (19 overs, 6 balls) to true overs safely.
+        try:
+            whole = int(overs_raw)
+            balls = round((float(overs_raw) - whole) * 10)
+            true_overs = whole + balls / 6
+            run_rate = round(runs / true_overs, 2) if true_overs > 0 else 0.0
+        except (ValueError, TypeError, ZeroDivisionError):
+            run_rate = 0.0
+
         innings_stats.append({
-            "inning": inn.get("inning", "Innings"),
+            "inning": inn.get("team", "Innings"),
             "runs": runs,
             "wickets": wickets,
-            "overs": overs,
+            "overs": overs_raw,
             "run_rate": run_rate,
         })
 
@@ -101,75 +318,102 @@ def compute_stats(state: MatchState) -> dict:
         "venue": raw["venue"],
         "match_type": raw["match_type"],
         "innings": innings_stats,
+        "scorecard": state.get("scorecard", {}),
     }
     return {"stats": stats}
 
 
 # ---------------------------------------------------------------
-# NODES: still placeholders for now — we'll make these real next.
+# NODE: find_turning_points — LLM picks the key moments
 # ---------------------------------------------------------------
 def find_turning_points(state: MatchState) -> dict:
     print("→ [find_turning_points] spotting key moments")
     s = state["stats"]
 
-    # Format the innings into readable lines for the prompt.
     innings_text = "\n".join(
         f"- {i['inning']}: {i['runs']}/{i['wickets']} in {i['overs']} overs "
         f"(run rate {i['run_rate']})"
         for i in s["innings"]
     )
 
-    prompt = f"""You are a sharp cricket analyst. Based ONLY on this match data, \
-identify 2-3 factors that shaped the match so far.
+    sc_text = _format_scorecard(s.get("scorecard", {}))
 
-CRITICAL RULES:
-- You ONLY have team totals. You do NOT have player names or partnership data.
-- NEVER invent players, partnerships, or specific events not present in the data.
-- Base every point only on: run rate, wickets, overs, match status, and the toss decision.
+    prompt = f"""You are a sharp cricket analyst. Identify the 2-3 factors that most \
+shaped this match, citing specific players, spells, or partnerships from the data.
+
+{ACCURACY_RULES}
 
 Match: {s['name']}
 Format: {s['match_type']}
 Venue: {s['venue']}
 Status: {s['status']}
-Innings (all the data you have):
+
+Team totals:
 {innings_text}
 
-List the key factors (grounded in the numbers only):"""
+Player detail (real, accurate names and numbers):
+{sc_text}
+
+List the key factors (cite ONLY real players/partnerships from the data above):"""
 
     response = llm.invoke(prompt)
-    # Keep only lines that look like real list items (start with a number or bullet),
-    # dropping any intro/preamble sentences.
     points = []
     for line in response.content.split("\n"):
         line = line.strip()
         if not line:
             continue
-        # a real factor line usually starts with "1.", "2.", "-", "•" etc.
         if line[0].isdigit() or line[0] in "-•*":
             points.append(line)
-    # fallback: if filtering removed everything, keep all non-empty lines
     if not points:
         points = [l.strip() for l in response.content.split("\n") if l.strip()]
     return {"turning_points": points}
 
-def list_current_matches() -> list:
-    """Return a lightweight list of current matches for the UI dropdown."""
-    url = "https://api.cricapi.com/v1/matches?apikey=26cd9747-30bb-4b7e-870e-8ee5926ecf3f&offset=0"
-    resp = requests.get(url, params={"apikey": CRICKET_API_KEY, "offset": 0})
-    payload = resp.json()
-    matches = payload.get("data", [])
 
-    # Return only what the dropdown needs: id, name, and whether it has a score yet.
+# ---------------------------------------------------------------
+# Helper for the UI dropdown (called by FastAPI, not part of graph)
+# ---------------------------------------------------------------
+def list_current_matches(kind: str = "recent") -> list:
+    """Return matches for the UI dropdown. kind = 'live' or 'recent'."""
+    endpoint = "live" if kind == "live" else "recent"
+    url = f"https://{RAPIDAPI_HOST}/matches/v1/{endpoint}"
+    resp = requests.get(url, headers=RAPIDAPI_HEADERS)
+
+    if resp.status_code != 200:
+        raise ValueError(f"API returned {resp.status_code}: {resp.text[:120]}")
+    payload = resp.json()
+
     result = []
-    for m in matches:
+    for match in _extract_matches(payload):
+        info = match.get("matchInfo", {})
+        score = match.get("matchScore", {})
+
+        # Build a short score line per team that has batted, e.g. "AUS 280/6 (50)"
+        score_parts = []
+        for team_key, team_obj in [("team1", "team1Score"), ("team2", "team2Score")]:
+            tname = info.get(team_key, {}).get("teamSName", "") or info.get(team_key, {}).get("teamName", "")
+            tscore = score.get(team_obj, {})
+            for inn_key in sorted(tscore.keys()):
+                inn = tscore[inn_key]
+                r = inn.get("runs", 0)
+                w = inn.get("wickets", 0)
+                o = inn.get("overs", 0)
+                score_parts.append(f"{tname} {r}/{w} ({o})")
+
         result.append({
-            "id": m.get("id", ""),
-            "name": m.get("name", "Unknown match"),
-            "status": m.get("status", ""),
-            "has_score": bool(m.get("score")),
+            "id": str(info.get("matchId", "")),
+            "name": f"{info.get('team1', {}).get('teamName', '?')} vs "
+                    f"{info.get('team2', {}).get('teamName', '?')} — "
+                    f"{info.get('matchDesc', '')}",
+            "status": info.get("status", ""),
+            "scores": score_parts,          # <-- NEW: list of per-innings score lines
+            "has_score": bool(match.get("matchScore")),
         })
     return result
 
+
+# ---------------------------------------------------------------
+# NODE: write_analysis — LLM writes the narrative (with critic feedback loop)
+# ---------------------------------------------------------------
 def write_analysis(state: MatchState) -> dict:
     count = state.get("revision_count", 0) + 1
     print(f"→ [write_analysis] writing draft (attempt {count})")
@@ -187,54 +431,72 @@ def write_analysis(state: MatchState) -> dict:
         for i in s["innings"]
     )
 
-    prompt = f"""You are a cricket analyst writing a concise match analysis. \
-Write ONE tight paragraph (3-4 sentences).
+    sc_text = _format_scorecard(s.get("scorecard", {}))
 
-CRITICAL RULES:
-- You ONLY have the team totals below. You do NOT have player names, \
-individual scores, or partnership details.
-- NEVER invent player names, partnerships, or specific events. \
-If you mention a player or partnership you were not given, that is a serious error.
-- Analyse ONLY what the numbers support: run rate, wickets lost, match situation, \
-the toss/bowling decision, and what the totals imply.
+    prompt = f"""You are a cricket analyst writing a concise match analysis. \
+Write ONE tight paragraph (4-5 sentences). Be insightful — explain WHY the match \
+unfolded as it did, citing specific players and partnerships from the data below.
+
+{ACCURACY_RULES}
 
 Match: {s['name']}
 Format: {s['match_type']}
 Status: {s['status']}
-Innings (these totals are ALL the data you have):
+
+Team totals:
 {innings_text}
+
+Player detail (use these REAL names and numbers — they are accurate):
+{sc_text}
 
 Key factors:
 {points}{feedback_block}
 
-Write a grounded analysis using only the totals above:"""
+Write a sharp, specific analysis grounded ONLY in the real player data above:"""
 
     response = llm.invoke(prompt)
     return {"analysis": response.content, "revision_count": count}
 
 
+# ---------------------------------------------------------------
+# NODE: critique — fact-checking editor; approves or sends back
+# ---------------------------------------------------------------
 def critique(state: MatchState) -> dict:
-    print("→ [critique] reviewing the draft")
+    print("→ [critique] fact-checking the draft")
     draft = state["analysis"]
 
-    prompt = f"""You are a demanding editor reviewing a cricket analysis paragraph. \
-Judge it on: specificity (uses real numbers), insight (explains WHY, not just WHAT), \
-and clarity. 
+    # Build the list of real player names + the authoritative wicket situation
+    sc = state["stats"].get("scorecard", {})
+    valid_names = _valid_player_names(sc)
+    names_str = ", ".join(sorted(valid_names)) if valid_names else "(none available)"
+
+    totals_str = "; ".join(
+        f"{i['inning']} {i['runs']}/{i['wickets']}"
+        for i in state["stats"].get("innings", [])
+    )
+
+    prompt = f"""You are a demanding fact-checking editor reviewing a cricket analysis.
+
+Check the analysis against these rules and REVISE if ANY fail:
+1. ACCURACY vs NUMBERS: The authoritative totals are: {totals_str}. \
+A "/0" means NOBODY is out — reject any claim of a dismissal or collapse for such an innings.
+2. REAL PLAYERS ONLY: Every player named in the analysis MUST be in this list: {names_str}. \
+If it names ANYONE not in this list, that is a fabrication — REVISE.
+3. NO INVENTED EVENTS: Reject any specific event (dismissal, partnership, milestone) not supported by the data.
+4. INSIGHT & CLARITY: It should explain WHY using real numbers, and read clearly.
 
 Respond in EXACTLY this format:
 VERDICT: APPROVE or REVISE
-FEEDBACK: <one sentence — if APPROVE, say what works; if REVISE, say precisely what to fix>
+FEEDBACK: <one sentence — if REVISE, name the exact problem, e.g. "names Babar Azam who is not in the scorecard" or "describes a collapse but the score is 19/0">
 
-Here is the analysis to review:
+Analysis to review:
 {draft}"""
 
     response = llm.invoke(prompt)
     text = response.content
 
-    # Parse the model's verdict out of its response.
     approved = "APPROVE" in text.upper().split("FEEDBACK")[0]
 
-    # Pull out the feedback line to pass back to the writer if needed.
     feedback = text
     if "FEEDBACK:" in text:
         feedback = text.split("FEEDBACK:", 1)[1].strip()
@@ -251,6 +513,7 @@ def should_continue(state: MatchState) -> str:
         return "finalize"
     return "revise"
 
+
 def run_analysis(match_id: str = "") -> dict:
     """Run the full agent graph and return the result dict.
     Called by both the CLI below and the FastAPI server."""
@@ -258,43 +521,20 @@ def run_analysis(match_id: str = "") -> dict:
     return graph.invoke(initial_state)
 
 
-def list_current_matches() -> list:
-    """Return a lightweight list of current matches for the UI dropdown."""
-    url = "https://api.cricapi.com/v1/matches?apikey=26cd9747-30bb-4b7e-870e-8ee5926ecf3f&offset=0"
-    resp = requests.get(url, params={"apikey": CRICKET_API_KEY, "offset": 0})
-    payload = resp.json()
-
-    # --- DEBUG: show what the API actually said ---
-    print("=" * 50)
-    print("[list_current_matches] status:", payload.get("status"))
-    print("[list_current_matches] info:", payload.get("info"))
-    print("[list_current_matches] data count:", len(payload.get("data", [])))
-    print("=" * 50)
-
-    matches = payload.get("data", [])
-    result = []
-    for m in matches:
-        result.append({
-            "id": m.get("id", ""),
-            "name": m.get("name", "Unknown match"),
-            "status": m.get("status", ""),
-            "has_score": bool(m.get("score")),
-        })
-    return result
-
-
 # ---------------------------------------------------------------
-# BUILD THE GRAPH (unchanged from Step 1)
+# BUILD THE GRAPH
 # ---------------------------------------------------------------
 builder = StateGraph(MatchState)
 builder.add_node("fetch_match", fetch_match)
+builder.add_node("fetch_scorecard", fetch_scorecard)
 builder.add_node("compute_stats", compute_stats)
 builder.add_node("find_turning_points", find_turning_points)
 builder.add_node("write_analysis", write_analysis)
 builder.add_node("critique", critique)
 
 builder.add_edge(START, "fetch_match")
-builder.add_edge("fetch_match", "compute_stats")
+builder.add_edge("fetch_match", "fetch_scorecard")
+builder.add_edge("fetch_scorecard", "compute_stats")
 builder.add_edge("compute_stats", "find_turning_points")
 builder.add_edge("find_turning_points", "write_analysis")
 builder.add_edge("write_analysis", "critique")
@@ -306,11 +546,9 @@ builder.add_conditional_edges(
 
 graph = builder.compile()
 
-# Print an ASCII diagram of your graph structure
-print(graph.get_graph().draw_ascii())
 
 # ---------------------------------------------------------------
-# RUN IT — now we print the real stats so you can verify the math
+# CLI run (for terminal testing)
 # ---------------------------------------------------------------
 if __name__ == "__main__":
     initial_state = {"match_id": "", "revision_count": 0}   # empty = auto-pick a match
