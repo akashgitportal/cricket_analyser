@@ -308,7 +308,7 @@ def compute_stats(state: MatchState) -> dict:
             "inning": inn.get("team", "Innings"),
             "runs": runs,
             "wickets": wickets,
-            "overs": overs_raw,
+            "overs": _fmt_overs(overs_raw),
             "run_rate": run_rate,
         })
 
@@ -368,6 +368,21 @@ List the key factors (cite ONLY real players/partnerships from the data above):"
         points = [l.strip() for l in response.content.split("\n") if l.strip()]
     return {"turning_points": points}
 
+def _fmt_overs(overs_raw) -> str:
+    """Normalize cricket overs notation: 6 balls = a full over.
+    So 19.6 -> '20', 19.6 is really 20 complete overs. 12.3 stays '12.3'."""
+    try:
+        overs_val = float(overs_raw or 0)
+    except (ValueError, TypeError):
+        return str(overs_raw)
+
+    whole = int(overs_val)
+    balls = round((overs_val - whole) * 10)
+    # roll over completed overs (6 balls = 1 over)
+    whole += balls // 6
+    balls = balls % 6
+    return f"{whole}" if balls == 0 else f"{whole}.{balls}"
+
 
 # ---------------------------------------------------------------
 # Helper for the UI dropdown (called by FastAPI, not part of graph)
@@ -396,7 +411,7 @@ def list_current_matches(kind: str = "recent") -> list:
                 inn = tscore[inn_key]
                 r = inn.get("runs", 0)
                 w = inn.get("wickets", 0)
-                o = inn.get("overs", 0)
+                o = _fmt_overs(inn.get("overs", 0))
                 score_parts.append(f"{tname} {r}/{w} ({o})")
 
         result.append({
