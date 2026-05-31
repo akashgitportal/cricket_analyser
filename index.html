@@ -324,9 +324,9 @@
   function renderTabs() {
     const tabs = [
       { id: "scorecard", label: "Scorecard" },
+      { id: "analysis", label: "✦ Analysis" },
       { id: "charts", label: "Charts" },
       { id: "partnerships", label: "Partnerships" },
-      { id: "analysis", label: "✦ Analysis" },
     ];
     document.getElementById("dtabs").innerHTML = tabs.map(t =>
       `<button class="dtab ${t.id === activeTab ? "active" : ""} ${t.id === "analysis" ? "analysis-tab" : ""}"
