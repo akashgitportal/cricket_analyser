@@ -9,7 +9,7 @@ from typing import TypedDict
 from langgraph.graph import StateGraph, START, END
 
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
-RAPIDAPI_HOST = "cricbuzz-cricket.p.rapidapi.com"
+RAPIDAPI_HOST = "cricbuzz-cricket2.p.rapidapi.com"   # <-- new provider
 RAPIDAPI_HEADERS = {
     "x-rapidapi-key": RAPIDAPI_KEY,
     "x-rapidapi-host": RAPIDAPI_HOST,
@@ -31,6 +31,22 @@ class MatchState(TypedDict):
     critique: str
     revision_count: int
     approved: bool
+
+
+# ---------------------------------------------------------------
+# Overs helper (defined early so any function can use it)
+# 6 balls = a full over, so "19.6" -> "20"; "12.3" stays "12.3".
+# ---------------------------------------------------------------
+def _fmt_overs(overs_raw) -> str:
+    try:
+        overs_val = float(overs_raw or 0)
+    except (ValueError, TypeError):
+        return str(overs_raw)
+    whole = int(overs_val)
+    balls = round((overs_val - whole) * 10)
+    whole += balls // 6      # roll completed overs over
+    balls = balls % 6
+    return f"{whole}" if balls == 0 else f"{whole}.{balls}"
 
 
 # ---------------------------------------------------------------
@@ -225,6 +241,7 @@ def fetch_scorecard(state: MatchState) -> dict:
 
     return {"scorecard": {"available": True, "innings": innings_detail}}
 
+
 def get_scorecard_only(match_id: str) -> dict:
     """Fetch just the scorecard for a match id — no agent run."""
     fake_state = {"raw_data": {"match_id": match_id}}
@@ -368,21 +385,6 @@ List the key factors (cite ONLY real players/partnerships from the data above):"
         points = [l.strip() for l in response.content.split("\n") if l.strip()]
     return {"turning_points": points}
 
-def _fmt_overs(overs_raw) -> str:
-    """Normalize cricket overs notation: 6 balls = a full over.
-    So 19.6 -> '20', 19.6 is really 20 complete overs. 12.3 stays '12.3'."""
-    try:
-        overs_val = float(overs_raw or 0)
-    except (ValueError, TypeError):
-        return str(overs_raw)
-
-    whole = int(overs_val)
-    balls = round((overs_val - whole) * 10)
-    # roll over completed overs (6 balls = 1 over)
-    whole += balls // 6
-    balls = balls % 6
-    return f"{whole}" if balls == 0 else f"{whole}.{balls}"
-
 
 # ---------------------------------------------------------------
 # Helper for the UI dropdown (called by FastAPI, not part of graph)
@@ -420,7 +422,7 @@ def list_current_matches(kind: str = "recent") -> list:
                     f"{info.get('team2', {}).get('teamName', '?')} — "
                     f"{info.get('matchDesc', '')}",
             "status": info.get("status", ""),
-            "scores": score_parts,          # <-- NEW: list of per-innings score lines
+            "scores": score_parts,          # list of per-innings score lines
             "has_score": bool(match.get("matchScore")),
         })
     return result
