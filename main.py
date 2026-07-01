@@ -4,7 +4,8 @@ from pydantic import BaseModel
 
 # Import your agent — completely unchanged. The web layer just wraps it.
 
-from agent import run_analysis, list_current_matches, get_scorecard_only
+from agent import (run_analysis, list_current_matches,
+                   get_scorecard_only, predict_match)
 
 
 app = FastAPI(title="Cricket Analyst Agent")
@@ -44,6 +45,10 @@ def analyze(req: AnalyzeRequest):
 def home():
     with open("index.html", "r", encoding="utf-8") as f:
         return f.read()
+    
+@app.get("/predict")
+def predict(match_id: str, match_type: str = "", status: str = ""):
+    return {"prediction": predict_match(match_id, match_type, status)}
     
 if __name__ == "__main__":
     import os

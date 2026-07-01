@@ -1,4 +1,5 @@
 import os
+import math
 import requests
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
@@ -47,6 +48,31 @@ def _fmt_overs(overs_raw) -> str:
     whole += balls // 6      # roll completed overs over
     balls = balls % 6
     return f"{whole}" if balls == 0 else f"{whole}.{balls}"
+
+
+def _overs_to_balls(overs_raw) -> int:
+    """'19.4' -> 19*6 + 4 = 118 balls."""
+    try:
+        v = float(overs_raw or 0)
+    except (ValueError, TypeError):
+        return 0
+    whole = int(v)
+    balls = round((v - whole) * 10)
+    return whole * 6 + balls
+
+
+def _total_overs_for_format(match_type: str) -> int:
+    """Infer innings length from format. Defaults to 50 if unknown."""
+    mt = (match_type or "").upper()
+    if "T20" in mt:
+        return 20
+    if "T10" in mt:
+        return 10
+    if "ODI" in mt or "50" in mt:
+        return 50
+    if "TEST" in mt:
+        return 90  # not meaningful for Test; treated as low-confidence
+    return 50
 
 
 # ---------------------------------------------------------------
@@ -248,6 +274,93 @@ def get_scorecard_only(match_id: str) -> dict:
     return fetch_scorecard(fake_state)["scorecard"]
 
 
+# ---------------------------------------------------------------
+# WIN PREDICTION — pure-Python heuristic model (no LLM, no extra cost)
+# ---------------------------------------------------------------
+def predict_match(match_id: str, match_type: str = "", status: str = "") -> dict:
+    """Compute a win-probability + projected score from the live scorecard.
+    If the match is already decided, return a 'finished' result instead."""
+
+    # --- Match already over? Don't predict, just report the result. ---
+    status_l = (status or "").lower()
+    finished_markers = ["won by", "win by", "drawn", "tied", "match tied",
+                        "abandoned", "no result"]
+    if any(marker in status_l for marker in finished_markers):
+        return {
+            "available": True,
+            "phase": "finished",
+            "result": status,        # e.g. "Australia Women won by 8 wkts"
+        }
+
+    sc = get_scorecard_only(match_id)
+    if not sc.get("available") or not sc.get("innings"):
+        return {"available": False, "reason": "No scorecard yet."}
+
+    innings = sc["innings"]
+    total_overs = _total_overs_for_format(match_type)
+    total_balls = total_overs * 6
+
+    # The team currently batting is the last innings in the list.
+    cur = innings[-1]
+    bat_team = cur.get("team", "Batting team")
+    runs = cur.get("score", 0) or 0
+    wkts = cur.get("wickets", 0) or 0
+    balls_bowled = _overs_to_balls(cur.get("overs", 0))
+    crr = (runs / balls_bowled * 6) if balls_bowled > 0 else 0.0
+    wickets_left = max(0, 10 - wkts)
+
+    # ----- FIRST INNINGS: no chase yet -> projection only -----
+    if len(innings) == 1:
+        balls_left = max(0, total_balls - balls_bowled)
+        resource_factor = 0.6 + 0.4 * (wickets_left / 10.0)   # fewer wickets -> lower projection
+        projected = int(runs + (crr / 6.0) * balls_left * resource_factor)
+        return {
+            "available": True,
+            "phase": "first_innings",
+            "bat_team": bat_team,
+            "crr": round(crr, 2),
+            "wickets_left": wickets_left,
+            "balls_left": balls_left,
+            "projected_score": projected,
+            "note": "Win probability becomes meaningful in the second innings.",
+        }
+
+    # ----- SECOND INNINGS: a chase -> real win probability -----
+    first = innings[0]
+    target = (first.get("score", 0) or 0) + 1
+    runs_needed = max(0, target - runs)
+    balls_left = max(0, total_balls - balls_bowled)
+    rrr = (runs_needed / balls_left * 6) if balls_left > 0 else float("inf")
+    bowl_team = first.get("team", "Bowling team")
+
+    if runs >= target:
+        chase_prob = 100.0
+    elif wickets_left == 0 or balls_left == 0:
+        chase_prob = 0.0
+    else:
+        rate_gap = crr - rrr                       # positive = ahead of the rate
+        wickets_factor = wickets_left / 10.0       # 0..1
+        balls_factor = balls_left / total_balls    # 0..1, time cushion
+        index = (rate_gap * 0.45) + (wickets_factor * 4.0) + (balls_factor * 1.5) - 2.0
+        chase_prob = 100.0 / (1.0 + math.exp(-index))
+        chase_prob = max(2.0, min(98.0, chase_prob))
+
+    return {
+        "available": True,
+        "phase": "second_innings",
+        "bat_team": bat_team,
+        "bowl_team": bowl_team,
+        "target": target,
+        "runs_needed": runs_needed,
+        "balls_left": balls_left,
+        "crr": round(crr, 2),
+        "rrr": round(rrr, 2) if rrr != float("inf") else None,
+        "wickets_left": wickets_left,
+        "bat_win_prob": round(chase_prob),
+        "bowl_win_prob": round(100 - chase_prob),
+    }
+
+
 def _format_scorecard(scorecard: dict) -> str:
     """Turn curated scorecard data into readable lines for the LLM prompt."""
     if not scorecard.get("available"):
@@ -422,7 +535,8 @@ def list_current_matches(kind: str = "recent") -> list:
                     f"{info.get('team2', {}).get('teamName', '?')} — "
                     f"{info.get('matchDesc', '')}",
             "status": info.get("status", ""),
-            "scores": score_parts,          # list of per-innings score lines
+            "scores": score_parts,                       # list of per-innings score lines
+            "format": info.get("matchFormat", ""),       # <-- NEW: T20/ODI etc. for the predictor
             "has_score": bool(match.get("matchScore")),
         })
     return result

@@ -95,7 +95,9 @@
   .sb-accent { height: 5px; background: linear-gradient(90deg, var(--green), var(--green-bright), var(--gold)); }
   .sb-inner { padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .sb-left .sb-title { font-family: "Fraunces", serif; font-size: 24px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.1; }
-  .sb-left .sb-status { font-size: 12.5px; color: var(--green); font-weight: 600; margin-top: 3px; }
+  .sb-left .sb-status { font-size: 12.5px; color: var(--green); font-weight: 600; margin-top: 3px;
+    display: inline-flex; align-items: center; gap: 7px; }
+  .sb-left .sb-status .livedot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); animation: pulse 2s infinite; }
   .sb-scores { display: flex; gap: 22px; flex-wrap: wrap; }
   .sb-score .sb-team { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
   .sb-score .sb-runs { font-family: "Fraunces", serif; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.1; }
@@ -184,6 +186,22 @@
     transition: width 1s cubic-bezier(0.2,0.7,0.2,1); }
   .pbar-val { font-size: 11.5px; font-weight: 600; width: 30px; color: var(--green); }
 
+  /* prediction */
+  .pred-bar-wrap { margin-bottom: 20px; }
+  .pred-teams { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 9px; }
+  .pred-teams b { color: var(--green); font-size: 17px; }
+  .pred-bar { height: 28px; border-radius: 8px; overflow: hidden; background: #e9aeb0; display: flex; box-shadow: inset 0 1px 3px rgba(0,0,0,0.08); }
+  .pred-bar-bat { height: 100%; background: linear-gradient(90deg, var(--green), var(--green-bright)); width: 0;
+    transition: width 1.1s cubic-bezier(0.2,0.7,0.2,1); }
+  .pred-line { font-size: 14.5px; margin-bottom: 14px; }
+  .pred-line b { color: var(--green); }
+  .pred-factors { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 14px; }
+  .pred-factors span { font-size: 12px; background: var(--green-wash); color: var(--green); padding: 5px 13px; border-radius: 100px; font-weight: 600; }
+  .pred-proj { text-align: center; padding: 16px 0 20px; }
+  .pred-proj-label { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 10px; font-weight: 600; }
+  .pred-proj-score { font-family: "Fraunces", serif; font-size: 56px; font-weight: 700; color: var(--green); line-height: 1; margin-bottom: 16px; }
+  .pred-note { font-size: 12px; color: var(--ink-soft); font-style: italic; line-height: 1.5; }
+
   @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
   .hidden { display: none !important; }
   @media (max-width: 860px) { .topbar { padding: 16px 20px; } .hero h2 { font-size: 27px; } }
@@ -223,12 +241,48 @@
   </div>
 
 <script>
-  let currentKind = "live", selectedId = "", selectedName = "", selectedStatus = "";
+  let currentKind = "live", selectedId = "", selectedName = "", selectedStatus = "", selectedFormat = "";
   let lastScorecard = null;
   let analysisData = null;        // cached once analyzed
   let activeTab = "scorecard";
+  let isLiveMatch = false;        // is the open match live?
+  let pollTimer = null;           // auto-refresh timer
+
+  // Cricket overs: "19.6" = 19 overs + 6 balls = a full 20 overs.
+  function fmtOvers(ov) {
+    const n = parseFloat(ov);
+    if (isNaN(n)) return ov;
+    const whole = Math.floor(n);
+    const balls = Math.round((n - whole) * 10);
+    if (balls >= 6) return String(whole + 1);
+    return String(n);
+  }
+
+  function oversToBalls(ov) {
+    const n = parseFloat(ov);
+    if (isNaN(n)) return 0;
+    const whole = Math.floor(n);
+    const balls = Math.round((n - whole) * 10);
+    return whole * 6 + balls;
+  }
+
+  // Cricket only moves forward. Reject any refreshed snapshot that regresses.
+  function isForwardProgress(oldSc, newSc) {
+    if (!oldSc || !oldSc.available) return true;
+    if (!newSc || !newSc.available) return false;
+    if (newSc.innings.length > oldSc.innings.length) return true;
+    if (newSc.innings.length < oldSc.innings.length) return false;
+    const o = oldSc.innings[oldSc.innings.length - 1];
+    const n = newSc.innings[newSc.innings.length - 1];
+    if (!o || !n) return true;
+    const oBalls = oversToBalls(o.overs), nBalls = oversToBalls(n.overs);
+    if (nBalls > oBalls) return true;
+    if (nBalls === oBalls && (n.score || 0) >= (o.score || 0)) return true;
+    return false;
+  }
 
   function showList() {
+    stopPolling();
     document.getElementById("detailView").classList.add("hidden");
     document.getElementById("listView").classList.remove("hidden");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -269,7 +323,8 @@
     grid.innerHTML = list.map(m => {
       const scoreLines = (m.scores && m.scores.length) ? `<div class="mcard-scores">${m.scores.map(s => `<div class="mscore">${s}</div>`).join("")}</div>` : "";
       const teams = m.name.split(" — ")[0], desc = m.name.split(" — ")[1] || "";
-      return `<div class="mcard" onclick="openMatch('${m.id}', ${JSON.stringify(teams).replace(/"/g,'&quot;')}, ${JSON.stringify(m.status).replace(/"/g,'&quot;')})">
+      const fmt = m.format || "";
+      return `<div class="mcard" onclick="openMatch('${m.id}', ${JSON.stringify(teams).replace(/"/g,'&quot;')}, ${JSON.stringify(m.status).replace(/"/g,'&quot;')}, true, ${JSON.stringify(fmt).replace(/"/g,'&quot;')})">
         <div class="live-tag"><span class="pulse"></span>Live</div>
         <div class="teams">${teams}</div><div class="desc">${desc}</div>${scoreLines}
         <div class="stat">${m.status}</div><span class="go-arrow">&rarr;</span></div>`;
@@ -279,13 +334,14 @@
     const sel = document.getElementById("matchSelect");
     if (!list.length) { sel.innerHTML = "<option value=''>No recent matches</option>"; return; }
     sel.innerHTML = "<option value=''>Select a match&hellip;</option>" +
-      list.map(m => `<option value="${m.id}" data-name="${m.name.split(" — ")[0]}" data-status="${m.status}">${m.name}</option>`).join("");
-    sel.onchange = () => { if (!sel.value) return; const o = sel.options[sel.selectedIndex]; openMatch(sel.value, o.dataset.name, o.dataset.status); };
+      list.map(m => `<option value="${m.id}" data-name="${m.name.split(" — ")[0]}" data-status="${m.status}" data-format="${m.format || ''}">${m.name}</option>`).join("");
+    sel.onchange = () => { if (!sel.value) return; const o = sel.options[sel.selectedIndex]; openMatch(sel.value, o.dataset.name, o.dataset.status, false, o.dataset.format); };
   }
 
   // ---- Open match: detail view, reset state, load scorecard ----
-  async function openMatch(id, name, status) {
-    selectedId = id; selectedName = name || "Match"; selectedStatus = status || "";
+  async function openMatch(id, name, status, isLive, format) {
+    selectedId = id; selectedName = name || "Match"; selectedStatus = status || ""; selectedFormat = format || "";
+    isLiveMatch = !!isLive;
     lastScorecard = null; analysisData = null; activeTab = "scorecard";
     showDetail();
     renderBanner();
@@ -297,25 +353,52 @@
       const res = await fetch(`/scorecard?match_id=${id}`);
       const data = await res.json();
       lastScorecard = data.scorecard;
-      renderBanner();      // refresh banner now that we have innings totals
+      renderBanner();
       renderTabContent();
+      startPolling();
     } catch (e) {
       document.getElementById("tabContent").innerHTML = `<div class="panel"><div class="panel-inner">Couldn't load scorecard.</div></div>`;
     }
   }
 
-  // ---- Pinned score banner (always on top) ----
+  // ---- Auto-refresh (live matches only, 30s, scorecard tab only) ----
+  function startPolling() {
+    stopPolling();
+    if (!isLiveMatch) return;
+    pollTimer = setInterval(refreshScore, 30000);
+  }
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+  async function refreshScore() {
+    if (activeTab !== "scorecard") return;
+    try {
+      const res = await fetch(`/scorecard?match_id=${selectedId}`);
+      const data = await res.json();
+      if (data.scorecard && data.scorecard.available) {
+        if (isForwardProgress(lastScorecard, data.scorecard)) {
+          lastScorecard = data.scorecard;
+          renderBanner();
+          if (activeTab === "scorecard") renderTabContent();
+        }
+      }
+    } catch (e) { /* ignore a failed poll */ }
+  }
+
+  // ---- Pinned score banner ----
   function renderBanner() {
     let scoresHtml = "";
     if (lastScorecard && lastScorecard.available && lastScorecard.innings.length) {
       scoresHtml = `<div class="sb-scores">${lastScorecard.innings.map(i => `
         <div class="sb-score"><div class="sb-team">${i.team}</div>
           <div class="sb-runs"><b>${i.score}</b>/${i.wickets}</div>
-          <div class="sb-ov">${i.overs} ov</div></div>`).join("")}</div>`;
+          <div class="sb-ov">${fmtOvers(i.overs)} ov</div></div>`).join("")}</div>`;
     }
+    const liveDot = isLiveMatch ? `<span class="livedot"></span>` : "";
     document.getElementById("scoreBanner").innerHTML = `
       <div class="score-banner"><div class="sb-accent"></div><div class="sb-inner">
-        <div class="sb-left"><div class="sb-title">${selectedName}</div><div class="sb-status">${selectedStatus}</div></div>
+        <div class="sb-left"><div class="sb-title">${selectedName}</div>
+          <div class="sb-status">${liveDot}${selectedStatus}</div></div>
         ${scoresHtml}
       </div></div>`;
   }
@@ -325,6 +408,7 @@
     const tabs = [
       { id: "scorecard", label: "Scorecard" },
       { id: "analysis", label: "✦ Analysis" },
+      { id: "prediction", label: "Prediction" },
       { id: "charts", label: "Charts" },
       { id: "partnerships", label: "Partnerships" },
     ];
@@ -345,9 +429,11 @@
     const c = document.getElementById("tabContent");
     if (activeTab === "scorecard") {
       c.innerHTML = panel("Scorecard", renderScorecard(lastScorecard));
+    } else if (activeTab === "prediction") {
+      c.innerHTML = panel("Win Prediction", "<div class='empty-note'>Calculating&hellip;</div>");
+      loadPrediction();
     } else if (activeTab === "charts") {
       c.innerHTML = panel("Run Progression", renderWormCharts(lastScorecard));
-      requestAnimationFrame(() => setTimeout(()=>{}, 10));
     } else if (activeTab === "partnerships") {
       c.innerHTML = panel("Partnerships", renderPartnershipCharts(lastScorecard));
       requestAnimationFrame(() => setTimeout(animateBars, 80));
@@ -363,6 +449,61 @@
   function panel(head, inner) {
     return `<div class="panel"><div class="panel-accent"></div><div class="panel-inner">
       <div class="panel-head">${head}</div>${inner}</div></div>`;
+  }
+
+  // ---- Prediction ----
+  async function loadPrediction() {
+    try {
+      const fmt = encodeURIComponent(selectedFormat || "");
+      const st = encodeURIComponent(selectedStatus || "");
+      const res = await fetch(`/predict?match_id=${selectedId}&match_type=${fmt}&status=${st}`);
+      const data = await res.json();
+      if (activeTab !== "prediction") return;   // user switched away while loading
+      document.getElementById("tabContent").innerHTML = panel("Win Prediction", renderPrediction(data.prediction));
+      requestAnimationFrame(() => setTimeout(() => {
+        document.querySelectorAll(".pred-bar-bat").forEach(el => { el.style.width = el.dataset.w + "%"; });
+      }, 80));
+    } catch (e) {
+      document.getElementById("tabContent").innerHTML = panel("Win Prediction", "<div class='empty-note'>Couldn't compute prediction.</div>");
+    }
+  }
+
+  function renderPrediction(p) {
+    if (!p || !p.available)
+      return `<div class='empty-note'>${(p && p.reason) || "No prediction available yet."}</div>`;
+
+    if (p.phase === "finished") {
+      return `
+        <div class="pred-proj">
+          <div class="pred-proj-label">Match Finished</div>
+          <div style="font-family:'Fraunces',serif;font-size:26px;font-weight:600;color:var(--green);line-height:1.2;margin:6px 0 4px">${p.result}</div>
+          <div class="pred-note" style="margin-top:10px">No prediction needed — this match is already decided.</div>
+        </div>`;
+    }
+
+    if (p.phase === "first_innings") {
+      return `
+        <div class="pred-proj">
+          <div class="pred-proj-label">${p.bat_team} — Projected Final Score</div>
+          <div class="pred-proj-score">${p.projected_score}</div>
+          <div class="pred-factors" style="justify-content:center">
+            <span>CRR ${p.crr}</span><span>${p.wickets_left} wkts left</span><span>${p.balls_left} balls left</span>
+          </div>
+        </div>
+        <div class="pred-note">${p.note}</div>`;
+    }
+
+    const batPct = p.bat_win_prob, bowlPct = p.bowl_win_prob;
+    return `
+      <div class="pred-bar-wrap">
+        <div class="pred-teams"><span>${p.bat_team} <b>${batPct}%</b></span><span><b>${bowlPct}%</b> ${p.bowl_team}</span></div>
+        <div class="pred-bar"><div class="pred-bar-bat" data-w="${batPct}"></div></div>
+      </div>
+      <div class="pred-line">${p.bat_team} need <b>${p.runs_needed}</b> from <b>${p.balls_left}</b> balls</div>
+      <div class="pred-factors">
+        <span>CRR ${p.crr}</span>${p.rrr != null ? `<span>RRR ${p.rrr}</span>` : ""}<span>${p.wickets_left} wkts left</span>
+      </div>
+      <div class="pred-note">Heuristic model — weighs required vs current run rate, wickets in hand, and balls remaining. An approximation, not a calibrated predictor.</div>`;
   }
 
   async function runAnalysis() {
@@ -403,13 +544,13 @@
           <td class="num r">${b.runs}</td><td class="num">${b.balls}</td><td class="num">${b.fours}</td>
           <td class="num">${b.sixes}</td><td class="num">${b.sr}</td></tr>`).join("");
       const bowlRows = inn.full_bowling.map(b => `
-        <tr><td><span class="bname">${b.name}</span></td><td class="num">${b.overs}</td><td class="num">${b.maidens}</td>
+        <tr><td><span class="bname">${b.name}</span></td><td class="num">${fmtOvers(b.overs)}</td><td class="num">${b.maidens}</td>
           <td class="num">${b.runs}</td><td class="num r">${b.wickets}</td><td class="num">${b.econ}</td></tr>`).join("");
       const openClass = idx === 0 ? "open" : "";
       return `<div class="sc-innings ${openClass}">
         <div class="sc-header" onclick="this.parentElement.classList.toggle('open')">
           <span class="sc-team">${inn.team} <span class="sc-score">${inn.score}/${inn.wickets}</span>
-            <span style="opacity:0.85;font-weight:400">(${inn.overs} ov)</span></span><span class="chev">&#9662;</span></div>
+            <span style="opacity:0.85;font-weight:400">(${fmtOvers(inn.overs)} ov)</span></span><span class="chev">&#9662;</span></div>
         <div class="sc-body">
           <div class="sc-subhead">Batting</div>
           <table class="sc"><tr><th>Batter</th><th class="num">R</th><th class="num">B</th><th class="num">4s</th>
